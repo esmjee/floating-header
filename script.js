@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '1.0.0';
+    const VERSION = '1.0.1';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     
@@ -451,20 +451,26 @@ const CCVToolbar = (() => {
         }
 
         const hasCss = newCss && newCss.trim().length > 0;
+        const iconStyle = 'width: 14px; height: 14px; flex-shrink: 0;';
 
         content = `
             <div style="text-align: center; padding: 10px 0;">
-                <div style="color: var(--ccv-accent); margin-bottom: 12px; display: flex; justify-content: center;">${icons.download}</div>
-                <p style="margin: 0 0 8px 0; color: var(--ccv-text); font-weight: 600;">New version available!</p>
-                <p style="margin: 0 0 16px 0; color: var(--ccv-text-muted); font-size: 12px;">v${VERSION} → v${newVersion}</p>
-                <p style="margin: 0 0 16px 0; color: var(--ccv-text); font-size: 11px;">Copy the files below and paste them in your "User Javascript and CSS" extension to update.</p>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <p style="margin: 0 0 8px 0; color: var(--ccv-text); font-weight: 600;">New version available!</p>
+                    <p style="margin: 0 0 16px 0; color: var(--ccv-text-muted); font-size: 12px;">v${VERSION} → v${newVersion}</p>
+                    <p style="margin: 0 0 12px 0; color: var(--ccv-text); font-size: 11px;">Copy the files below and paste them in the extension. <a href="chrome-extension://nbhcbdghjpllgmfilhnhkllmkecfmpld/src/options.html" target="_blank" 
+                    style="display: inline-flex; align-items: center; gap: 4px; margin-bottom: 16px; color: var(--ccv-accent); font-size: 11px; text-decoration: none; cursor: pointer;">
+                        <span style="${iconStyle}">${icons.externalLink}</span>
+                        <span>Open Extension Settings</span>
+                    </a></p>
+                </div>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     <button class="ccv-btn ccv-btn-primary ccv-copy-js" style="width: 100%; justify-content: center;">
-                        ${icons.code}<span style="margin-left: 6px;">Copy JavaScript</span>
+                        <span style="${iconStyle}">${icons.code}</span><span style="margin-left: 6px;">Copy JavaScript</span>
                     </button>
                     ${hasCss ? `
                     <button class="ccv-btn ccv-copy-css" style="width: 100%; justify-content: center;">
-                        ${icons.palette}<span style="margin-left: 6px;">Copy CSS</span>
+                        <span style="${iconStyle}">${icons.palette}</span><span style="margin-left: 6px;">Copy CSS</span>
                     </button>
                     ` : `
                     <p style="margin: 0; color: var(--ccv-text-muted); font-size: 10px;">No CSS URL configured</p>
@@ -478,14 +484,16 @@ const CCVToolbar = (() => {
         const saveBtn = modal.querySelector('[data-action="save-modal"]');
         if (saveBtn) saveBtn.style.display = 'none';
         
+        const smallIcon = 'width: 14px; height: 14px; flex-shrink: 0;';
+        
         const copyJsBtn = modal.querySelector('.ccv-copy-js');
         if (copyJsBtn) {
             copyJsBtn.onclick = () => {
                 navigator.clipboard.writeText(newScript).then(() => {
                     showToast('JavaScript copied! Paste it in your extension.');
-                    copyJsBtn.innerHTML = `${icons.check}<span style="margin-left: 6px;">Copied!</span>`;
+                    copyJsBtn.innerHTML = `<span style="${smallIcon}">${icons.check}</span><span style="margin-left: 6px;">Copied!</span>`;
                     setTimeout(() => {
-                        copyJsBtn.innerHTML = `${icons.code}<span style="margin-left: 6px;">Copy JavaScript</span>`;
+                        copyJsBtn.innerHTML = `<span style="${smallIcon}">${icons.code}</span><span style="margin-left: 6px;">Copy JavaScript</span>`;
                     }, 2000);
                 });
             };
@@ -496,9 +504,9 @@ const CCVToolbar = (() => {
             copyCssBtn.onclick = () => {
                 navigator.clipboard.writeText(newCss).then(() => {
                     showToast('CSS copied! Paste it in your extension.');
-                    copyCssBtn.innerHTML = `${icons.check}<span style="margin-left: 6px;">Copied!</span>`;
+                    copyCssBtn.innerHTML = `<span style="${smallIcon}">${icons.check}</span><span style="margin-left: 6px;">Copied!</span>`;
                     setTimeout(() => {
-                        copyCssBtn.innerHTML = `${icons.palette}<span style="margin-left: 6px;">Copy CSS</span>`;
+                        copyCssBtn.innerHTML = `<span style="${smallIcon}">${icons.palette}</span><span style="margin-left: 6px;">Copy CSS</span>`;
                     }, 2000);
                 });
             };
