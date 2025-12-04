@@ -1,8 +1,7 @@
 const CCVToolbar = (() => {
-    // Version info - update this when releasing new versions
     const VERSION = '1.0.0';
-    const UPDATE_URL_JS = ''; // Set this to your raw GitHub URL for script.js
-    const UPDATE_URL_CSS = ''; // Set this to your raw GitHub URL for style.css
+    const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
+    const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     
     const defaultConfig = {
         mode: 'light',
@@ -225,7 +224,6 @@ const CCVToolbar = (() => {
     const getBaseDomain = () => {
         const hostname = window.location.hostname;
         const parts = hostname.split('.');
-        // Keep last 2 parts (e.g., ccvdev.nl from ejansen.ccvdev.nl)
         if (parts.length > 2) {
             return '.' + parts.slice(-2).join('.');
         }
@@ -246,7 +244,7 @@ const CCVToolbar = (() => {
 
     const isCurrentMatchingDefaults = () => {
         const defaults = getDefaultsFromCookie();
-        if (!defaults) return null; // No defaults saved
+        if (!defaults) return null;
         return (
             config.mode === defaults.mode &&
             config.color === defaults.color &&
@@ -279,11 +277,9 @@ const CCVToolbar = (() => {
                 config = { ...defaultConfig };
             }
         } else {
-            // No local config, check for cross-domain defaults
             const defaults = getDefaultsFromCookie();
             if (defaults) {
                 config = { ...defaultConfig, ...defaults };
-                // Save to localStorage so it persists for this domain
                 saveConfig();
             }
         }
@@ -317,7 +313,6 @@ const CCVToolbar = (() => {
         e.preventDefault();
         e.stopPropagation();
         
-        // Remove any existing context menu
         const existing = document.querySelector('.ccv-context-menu');
         if (existing) existing.remove();
 
@@ -335,7 +330,6 @@ const CCVToolbar = (() => {
 
         document.body.appendChild(menu);
 
-        // Position the menu
         const rect = menu.getBoundingClientRect();
         let x = e.clientX;
         let y = e.clientY;
@@ -350,7 +344,6 @@ const CCVToolbar = (() => {
         menu.style.left = `${x}px`;
         menu.style.top = `${y}px`;
 
-        // Add click handlers
         const buttons = menu.querySelectorAll('.ccv-context-item');
         let itemIndex = 0;
         menuItems.forEach((item, i) => {
@@ -363,7 +356,6 @@ const CCVToolbar = (() => {
             }
         });
 
-        // Close on click outside
         const closeMenu = (ev) => {
             if (!menu.contains(ev.target)) {
                 menu.remove();
@@ -408,7 +400,6 @@ const CCVToolbar = (() => {
         showToast('Checking for updates...');
 
         try {
-            // Fetch JavaScript
             const jsResponse = await fetch(UPDATE_URL_JS + '?t=' + Date.now(), { cache: 'no-store' });
             if (!jsResponse.ok) throw new Error('Failed to fetch script');
             const remoteScript = await jsResponse.text();
@@ -419,7 +410,6 @@ const CCVToolbar = (() => {
                 return;
             }
 
-            // Fetch CSS if URL is provided
             let remoteCss = null;
             if (UPDATE_URL_CSS) {
                 try {
@@ -428,7 +418,6 @@ const CCVToolbar = (() => {
                         remoteCss = await cssResponse.text();
                     }
                 } catch (e) {
-                    // CSS fetch failed, but continue with JS only
                     console.warn('Failed to fetch CSS:', e);
                 }
             }
@@ -486,11 +475,9 @@ const CCVToolbar = (() => {
 
         const modal = createModal('Update Available', content, null);
         
-        // Hide the default save button
         const saveBtn = modal.querySelector('[data-action="save-modal"]');
         if (saveBtn) saveBtn.style.display = 'none';
         
-        // Add click handlers for copy buttons
         const copyJsBtn = modal.querySelector('.ccv-copy-js');
         if (copyJsBtn) {
             copyJsBtn.onclick = () => {
@@ -1105,9 +1092,7 @@ const CCVToolbar = (() => {
             </div>
         `}).join('');
 
-        // Add click handlers
         container.querySelectorAll('.ccv-domain-item').forEach(item => {
-            // Left-click: navigate to domain
             item.onclick = (e) => {
                 const domain = config.domains.find(d => d.id === item.dataset.domainId);
                 if (!domain) return;
@@ -1119,7 +1104,6 @@ const CCVToolbar = (() => {
                 }
             };
             
-            // Right-click: show context menu
             item.oncontextmenu = (e) => {
                 const domain = config.domains.find(d => d.id === item.dataset.domainId);
                 if (!domain) return;
@@ -1160,9 +1144,7 @@ const CCVToolbar = (() => {
             </div>
         `}).join('');
 
-        // Add click handlers
         container.querySelectorAll('.ccv-url-item').forEach(item => {
-            // Left-click: navigate to URL
             item.onclick = (e) => {
                 const url = config.urls.find(u => u.id === item.dataset.urlId);
                 if (!url) return;
@@ -1174,7 +1156,6 @@ const CCVToolbar = (() => {
                 }
             };
             
-            // Right-click: show context menu
             item.oncontextmenu = (e) => {
                 const url = config.urls.find(u => u.id === item.dataset.urlId);
                 if (!url) return;
@@ -1317,7 +1298,6 @@ const CCVToolbar = (() => {
                 draggedElement = null;
                 setTimeout(() => wasDragged = false, 100);
                 
-                // Save the new order based on current DOM order
                 const newOrder = [];
                 container.querySelectorAll('.ccv-webshop-theme-btn').forEach(item => {
                     const theme = config.webshopThemes.find(t => t.id === item.dataset.webshopTheme);
@@ -1326,7 +1306,6 @@ const CCVToolbar = (() => {
                 config.webshopThemes = newOrder;
                 saveConfig();
                 
-                // Update data-theme-index attributes
                 container.querySelectorAll('.ccv-webshop-theme-btn').forEach((item, idx) => {
                     item.dataset.themeIndex = idx;
                 });
@@ -1343,16 +1322,10 @@ const CCVToolbar = (() => {
                 const targetIdx = items.indexOf(btn);
                 
                 if (draggedIdx < targetIdx) {
-                    // Dragging down - insert after target
                     btn.parentNode.insertBefore(draggedElement, btn.nextSibling);
                 } else {
-                    // Dragging up - insert before target
                     btn.parentNode.insertBefore(draggedElement, btn);
                 }
-            };
-
-            btn.ondragleave = () => {
-                // No longer needed
             };
 
             btn.ondrop = (e) => {
@@ -1360,7 +1333,6 @@ const CCVToolbar = (() => {
                 e.stopPropagation();
             };
 
-            // Left-click: apply theme
             btn.onclick = (e) => {
                 if (wasDragged) {
                     e.preventDefault();
@@ -1370,7 +1342,6 @@ const CCVToolbar = (() => {
                 switchWebshopTheme(btn.dataset.webshopTheme);
             };
             
-            // Right-click: show context menu
             btn.oncontextmenu = (e) => {
                 const theme = config.webshopThemes.find(t => t.id === btn.dataset.webshopTheme);
                 if (!theme) return;
