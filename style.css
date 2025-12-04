@@ -1462,6 +1462,60 @@
     }
 }
 
+#ccv-toolbar .ccv-custom-color {
+    position: relative;
+
+    .ccv-color-edit {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        background: var(--ccv-bg);
+        border: 1px solid var(--ccv-border);
+        border-radius: 4px;
+        color: var(--ccv-text-muted);
+        cursor: pointer;
+        opacity: 0;
+        transition: all var(--ccv-transition);
+
+        svg {
+            width: 10px;
+            height: 10px;
+        }
+
+        &:hover {
+            color: var(--ccv-accent);
+            border-color: var(--ccv-accent);
+        }
+    }
+
+    &:hover .ccv-color-edit {
+        opacity: 1;
+    }
+}
+
+#ccv-toolbar .ccv-add-color {
+    border-style: dashed;
+    opacity: 0.7;
+
+    &:hover {
+        opacity: 1;
+        border-color: var(--ccv-accent);
+    }
+
+    .preview {
+        background: var(--ccv-surface-hover);
+        
+        svg {
+            color: var(--ccv-accent);
+        }
+    }
+}
+
 .ccv-toggle-btn {
     all: initial;
     position: fixed;

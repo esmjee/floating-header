@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '1.0.1';
+    const VERSION = '1.1.0';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     
@@ -11,6 +11,7 @@ const CCVToolbar = (() => {
         expanded: true,
         initialView: 'compact',
         compactLayout: 'default',
+        customColors: [],
         domains: [
             { id: '1', name: 'Hoofd Webshop', url: 'https://ejansen.ccvdev.nl', icon: 'globe', showInCompact: true, color: '' },
             { id: '2', name: 'Admin', url: 'https://ejansen-admin.ccvdev.nl', icon: 'users', showInCompact: false, color: '' },
@@ -206,13 +207,22 @@ const CCVToolbar = (() => {
         { id: 'light', name: 'Light' }
     ];
 
-    const themeColors = [
-        { id: 'default', name: 'Default', color: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
-        { id: 'aesthetic', name: 'Aesthetic', color: 'linear-gradient(135deg, #a78bfa, #f472b6)' },
-        { id: 'ocean', name: 'Ocean', color: 'linear-gradient(135deg, #38bdf8, #06b6d4)' },
-        { id: 'forest', name: 'Forest', color: 'linear-gradient(135deg, #4ade80, #22c55e)' },
-        { id: 'sunset', name: 'Sunset', color: 'linear-gradient(135deg, #fb923c, #f97316)' }
+    const builtInColors = [
+        { id: 'default', name: 'Default', color: '#6366f1', preview: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
+        { id: 'aesthetic', name: 'Aesthetic', color: '#a78bfa', preview: 'linear-gradient(135deg, #a78bfa, #f472b6)' },
+        { id: 'ocean', name: 'Ocean', color: '#38bdf8', preview: 'linear-gradient(135deg, #38bdf8, #06b6d4)' },
+        { id: 'forest', name: 'Forest', color: '#4ade80', preview: 'linear-gradient(135deg, #4ade80, #22c55e)' },
+        { id: 'sunset', name: 'Sunset', color: '#fb923c', preview: 'linear-gradient(135deg, #fb923c, #f97316)' }
     ];
+
+    const getThemeColors = () => {
+        const customColors = (config.customColors || []).map(c => ({
+            ...c,
+            preview: c.color,
+            isCustom: true
+        }));
+        return [...builtInColors, ...customColors];
+    };
 
     const compactLayouts = [
         { id: 'default', name: 'List' },
@@ -249,7 +259,8 @@ const CCVToolbar = (() => {
             config.mode === defaults.mode &&
             config.color === defaults.color &&
             config.compactLayout === defaults.compactLayout &&
-            config.initialView === defaults.initialView
+            config.initialView === defaults.initialView &&
+            JSON.stringify(config.customColors || []) === JSON.stringify(defaults.customColors || [])
         );
     };
 
@@ -259,6 +270,7 @@ const CCVToolbar = (() => {
             color: config.color,
             compactLayout: config.compactLayout,
             initialView: config.initialView,
+            customColors: config.customColors,
             position: config.position
         };
         const value = encodeURIComponent(JSON.stringify(defaults));
@@ -1038,6 +1050,7 @@ const CCVToolbar = (() => {
             compactLayout: config.compactLayout,
             initialView: config.initialView,
             webshopThemes: config.webshopThemes,
+            customColors: config.customColors,
             position: config.position
         }, null, 2);
         const blob = new Blob([data], { type: 'application/json' });
@@ -1069,6 +1082,7 @@ const CCVToolbar = (() => {
                     if (data.compactLayout) config.compactLayout = data.compactLayout;
                     if (data.initialView) config.initialView = data.initialView;
                     if (data.webshopThemes) config.webshopThemes = data.webshopThemes;
+                    if (data.customColors) config.customColors = data.customColors;
                     if (data.position) config.position = data.position;
                     applyTheme();
                     saveConfig();
@@ -1202,12 +1216,60 @@ const CCVToolbar = (() => {
         }
         
         if (colorContainer) {
+            const themeColors = getThemeColors();
             colorContainer.innerHTML = themeColors.map(color => `
-                <div class="ccv-theme-option ${config.color === color.id ? 'active' : ''}" data-color="${color.id}">
-                    <div class="preview" style="background: ${color.color}"></div>
+                <div class="ccv-theme-option ${config.color === color.id ? 'active' : ''} ${color.isCustom ? 'ccv-custom-color' : ''}" 
+                     data-color="${color.id}" ${color.isCustom ? 'data-custom="true"' : ''}>
+                    <div class="preview" style="background: ${color.preview}"></div>
                     <span class="name">${color.name}</span>
+                    ${color.isCustom ? `<button class="ccv-color-edit" data-edit-color="${color.id}">${icons.edit}</button>` : ''}
                 </div>
-            `).join('');
+            `).join('') + `
+                <div class="ccv-theme-option ccv-add-color" data-action="add-custom-color">
+                    <div class="preview">${icons.add}</div>
+                    <span class="name">Custom</span>
+                </div>
+            `;
+            
+            colorContainer.querySelectorAll('.ccv-color-edit').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const colorId = btn.dataset.editColor;
+                    const customColor = config.customColors.find(c => c.id === colorId);
+                    if (customColor) showCustomColorModal(customColor);
+                };
+            });
+            
+            colorContainer.querySelectorAll('.ccv-custom-color').forEach(el => {
+                el.oncontextmenu = (e) => {
+                    const colorId = el.dataset.color;
+                    const customColor = config.customColors.find(c => c.id === colorId);
+                    if (!customColor) return;
+                    
+                    showContextMenu(e, [
+                        { icon: icons.check, label: 'Apply', action: () => {
+                            config.color = customColor.id;
+                            applyTheme();
+                            saveConfig();
+                            renderThemeGrid();
+                        }},
+                        { separator: true },
+                        { icon: icons.edit, label: 'Edit', action: () => showCustomColorModal(customColor) },
+                        { icon: icons.delete, label: 'Delete', danger: true, action: () => {
+                            showDeleteConfirmation('Color', customColor.name, () => {
+                                config.customColors = config.customColors.filter(c => c.id !== customColor.id);
+                                if (config.color === customColor.id) {
+                                    config.color = 'default';
+                                    applyTheme();
+                                }
+                                saveConfig();
+                                renderThemeGrid();
+                                showToast('Color deleted');
+                            });
+                        }}
+                    ]);
+                };
+            });
         }
 
         if (layoutContainer) {
@@ -1217,6 +1279,79 @@ const CCVToolbar = (() => {
                 </div>
             `).join('');
         }
+    };
+
+    const showCustomColorModal = (customColor = null) => {
+        const isEdit = !!customColor;
+        
+        const content = `
+            <div class="ccv-input-group">
+                <label class="ccv-input-label">Name</label>
+                <input type="text" class="ccv-input" id="ccv-custom-color-name" value="${customColor?.name || ''}" placeholder="My Color">
+            </div>
+            <div class="ccv-input-group">
+                <label class="ccv-input-label">Color</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="color" id="ccv-custom-color-value" value="${customColor?.color || '#6366f1'}" style="width: 50px; height: 36px; border: none; border-radius: 6px; cursor: pointer;">
+                    <input type="text" class="ccv-input" id="ccv-custom-color-hex" value="${customColor?.color || '#6366f1'}" placeholder="#6366f1" style="flex: 1; font-family: monospace;">
+                </div>
+            </div>
+        `;
+
+        const modal = createModal(isEdit ? 'Edit Custom Color' : 'Add Custom Color', content, () => {
+            const name = document.getElementById('ccv-custom-color-name').value.trim();
+            const color = document.getElementById('ccv-custom-color-value').value;
+            
+            if (!name) {
+                showToast('Please enter a name');
+                return false;
+            }
+
+            if (!config.customColors) config.customColors = [];
+
+            if (isEdit) {
+                const idx = config.customColors.findIndex(c => c.id === customColor.id);
+                if (idx !== -1) {
+                    config.customColors[idx] = { ...config.customColors[idx], name, color };
+                }
+                showToast('Color updated');
+            } else {
+                const id = 'custom_' + generateId();
+                config.customColors.push({ id, name, color });
+                showToast('Color added');
+            }
+            
+            saveConfig();
+            renderThemeGrid();
+            
+            if (isEdit && config.color === customColor.id) {
+                applyTheme();
+            }
+            
+            return true;
+        }, isEdit ? () => {
+            config.customColors = config.customColors.filter(c => c.id !== customColor.id);
+            if (config.color === customColor.id) {
+                config.color = 'default';
+                applyTheme();
+            }
+            saveConfig();
+            renderThemeGrid();
+            showToast('Color deleted');
+        } : null);
+
+        const colorPicker = modal.querySelector('#ccv-custom-color-value');
+        const hexInput = modal.querySelector('#ccv-custom-color-hex');
+        
+        colorPicker.oninput = () => {
+            hexInput.value = colorPicker.value;
+        };
+        
+        hexInput.oninput = () => {
+            if (/^#[0-9A-Fa-f]{6}$/.test(hexInput.value)) {
+                colorPicker.value = hexInput.value;
+            }
+        };
     };
 
     const showWebshopThemeModal = (theme = null) => {
@@ -1373,25 +1508,37 @@ const CCVToolbar = (() => {
 
     const applyTheme = () => {
         const mode = config.mode;
-        const color = config.color === 'default' ? '' : config.color;
+        const isCustomColor = config.color?.startsWith('custom_');
+        const color = config.color === 'default' ? '' : (isCustomColor ? '' : config.color);
         
-        if (elements.toolbar) {
-            elements.toolbar.setAttribute('data-mode', mode);
-            elements.toolbar.setAttribute('data-color', color);
-        }
-        if (elements.toggleBtn) {
-            elements.toggleBtn.setAttribute('data-mode', mode);
-            elements.toggleBtn.setAttribute('data-color', color);
+        let customColorValue = null;
+        if (isCustomColor && config.customColors) {
+            const customColor = config.customColors.find(c => c.id === config.color);
+            if (customColor) {
+                customColorValue = customColor.color;
+            }
         }
         
-        document.querySelectorAll('.ccv-modal-overlay').forEach(el => {
+        const applyToElement = (el) => {
+            if (!el) return;
             el.setAttribute('data-mode', mode);
             el.setAttribute('data-color', color);
-        });
-        document.querySelectorAll('.ccv-toast').forEach(el => {
-            el.setAttribute('data-mode', mode);
-            el.setAttribute('data-color', color);
-        });
+            
+            if (customColorValue) {
+                el.style.setProperty('--ccv-accent', customColorValue);
+                el.style.setProperty('--ccv-accent-glow', customColorValue + '4d');
+            } else {
+                el.style.removeProperty('--ccv-accent');
+                el.style.removeProperty('--ccv-accent-glow');
+            }
+        };
+        
+        applyToElement(elements.toolbar);
+        applyToElement(elements.toggleBtn);
+        
+        document.querySelectorAll('.ccv-modal-overlay').forEach(applyToElement);
+        document.querySelectorAll('.ccv-toast').forEach(applyToElement);
+        document.querySelectorAll('.ccv-context-menu').forEach(applyToElement);
     };
 
     const setMode = (modeId) => {
@@ -1605,6 +1752,9 @@ const CCVToolbar = (() => {
                 break;
             case 'clear-cookies':
                 clearCookiePreferences();
+                break;
+            case 'add-custom-color':
+                showCustomColorModal();
                 break;
             case 'add-webshop-theme':
                 showWebshopThemeModal();
