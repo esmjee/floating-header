@@ -24,8 +24,7 @@ A customizable floating toolbar for CCV webshop developers to quickly navigate b
 3. Click the extension icon → "Add new"
 4. Copy the contents of `script.js` into the JavaScript section
 5. Copy the contents of `style.css` into the CSS section
-6. Set "Run at" to "Document end"
-7. Save
+6. Save and enjoy
 
 ## Usage
 
