@@ -2,7 +2,7 @@
 
 A customizable floating toolbar for CCV webshop developers to quickly navigate between domains, URLs, and switch webshop themes.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.2.0-blue)
 
 ## Features
 
