@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '1.1.0';
+    const VERSION = '1.2.0';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     
@@ -12,6 +12,7 @@ const CCVToolbar = (() => {
         initialView: 'compact',
         compactLayout: 'default',
         customColors: [],
+        usesDefaultConfig: true,
         domains: [
             { id: '1', name: 'Hoofd Webshop', url: 'https://ejansen.ccvdev.nl', icon: 'globe', showInCompact: true, color: '' },
             { id: '2', name: 'Admin', url: 'https://ejansen-admin.ccvdev.nl', icon: 'users', showInCompact: false, color: '' },
@@ -57,7 +58,11 @@ const CCVToolbar = (() => {
         { id: 'rose', name: 'Rose', color: '#f43f5e' }
     ];
 
-    const getItemColor = (colorId) => itemColors.find(c => c.id === colorId)?.color || '';
+    const getItemColor = (colorId) => {
+        if (!colorId) return '';
+        if (colorId.startsWith('#')) return colorId;
+        return itemColors.find(c => c.id === colorId)?.color || '';
+    };
 
     let config = { ...defaultConfig };
     let isDragging = false;
@@ -225,10 +230,26 @@ const CCVToolbar = (() => {
     };
 
     const compactLayouts = [
-        { id: 'default', name: 'List' },
-        { id: 'circles', name: 'Circles' },
-        { id: 'horizontal', name: 'Bar' },
-        { id: 'minimal', name: 'Dots' }
+        { 
+            id: 'default', 
+            name: 'List',
+            icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="4" rx="1"/><rect x="4" y="10" width="16" height="4" rx="1"/><rect x="4" y="17" width="16" height="4" rx="1"/></svg>`
+        },
+        { 
+            id: 'circles', 
+            name: 'Circles',
+            icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="8" r="3"/><circle cx="17" cy="8" r="3"/><circle cx="7" cy="16" r="3"/><circle cx="17" cy="16" r="3"/></svg>`
+        },
+        { 
+            id: 'horizontal', 
+            name: 'Bar',
+            icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="8" width="20" height="8" rx="4"/><circle cx="7" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="17" cy="12" r="1.5" fill="currentColor"/></svg>`
+        },
+        { 
+            id: 'minimal', 
+            name: 'Dots',
+            icon: `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="4.5" r="3"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="19.5" r="3"/></svg>`
+        }
     ];
 
     const getBaseDomain = () => {
@@ -295,6 +316,19 @@ const CCVToolbar = (() => {
                 saveConfig();
             }
         }
+        
+        // If usesDefaultConfig is true, apply defaults from cookie for layout settings
+        if (config.usesDefaultConfig) {
+            const defaults = getDefaultsFromCookie();
+            if (defaults) {
+                config.mode = defaults.mode ?? config.mode;
+                config.color = defaults.color ?? config.color;
+                config.compactLayout = defaults.compactLayout ?? config.compactLayout;
+                config.initialView = defaults.initialView ?? config.initialView;
+                config.customColors = defaults.customColors ?? config.customColors;
+                config.position = defaults.position ?? config.position;
+            }
+        }
     };
 
     const saveConfig = () => {
@@ -321,9 +355,73 @@ const CCVToolbar = (() => {
         }, 2000);
     };
 
+    // Custom tooltip system
+    let tooltipElement = null;
+    let tooltipTimeout = null;
+    
+    const createTooltip = () => {
+        if (tooltipElement) return tooltipElement;
+        tooltipElement = document.createElement('div');
+        tooltipElement.className = 'ccv-tooltip';
+        tooltipElement.setAttribute('data-mode', config.mode);
+        document.body.appendChild(tooltipElement);
+        return tooltipElement;
+    };
+    
+    const showTooltip = (target, text) => {
+        if (!text) return;
+        clearTimeout(tooltipTimeout);
+        
+        tooltipTimeout = setTimeout(() => {
+            const tooltip = createTooltip();
+            tooltip.textContent = text;
+            tooltip.setAttribute('data-mode', config.mode);
+            tooltip.classList.add('visible');
+            
+            const rect = target.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+            
+            let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+            let top = rect.top - tooltipRect.height - 8;
+            
+            // Keep tooltip within viewport
+            if (left < 8) left = 8;
+            if (left + tooltipRect.width > window.innerWidth - 8) {
+                left = window.innerWidth - tooltipRect.width - 8;
+            }
+            if (top < 8) {
+                top = rect.bottom + 8;
+                tooltip.classList.add('below');
+            } else {
+                tooltip.classList.remove('below');
+            }
+            
+            tooltip.style.left = `${left}px`;
+            tooltip.style.top = `${top}px`;
+        }, 400);
+    };
+    
+    const hideTooltip = () => {
+        clearTimeout(tooltipTimeout);
+        if (tooltipElement) {
+            tooltipElement.classList.remove('visible');
+        }
+    };
+    
+    const setupTooltips = (container) => {
+        container.querySelectorAll('[data-tooltip]').forEach(el => {
+            el.addEventListener('mouseenter', (e) => {
+                showTooltip(e.target.closest('[data-tooltip]'), e.target.closest('[data-tooltip]').dataset.tooltip);
+            });
+            el.addEventListener('mouseleave', hideTooltip);
+            el.addEventListener('mousedown', hideTooltip);
+        });
+    };
+
     const showContextMenu = (e, menuItems) => {
         e.preventDefault();
         e.stopPropagation();
+        hideTooltip();
         
         const existing = document.querySelector('.ccv-context-menu');
         if (existing) existing.remove();
@@ -604,12 +702,23 @@ const CCVToolbar = (() => {
         panel.className = 'ccv-panel ccv-expanded';
         panel.style.width = '340px';
         
+        const getConfigStatusIcon = () => {
+            const hasDefaults = getDefaultsFromCookie() !== null;
+            if (!hasDefaults) {
+                return `<div class="ccv-config-status ccv-config-none" data-tooltip="No defaults saved">${icons.info}</div>`;
+            } else if (config.usesDefaultConfig) {
+                return `<div class="ccv-config-status ccv-config-synced" data-tooltip="Synced with defaults">${icons.check}</div>`;
+            } else {
+                return `<div class="ccv-config-status ccv-config-custom" data-tooltip="Custom config">${icons.alert}</div>`;
+            }
+        };
+        
         panel.innerHTML = `
             <div class="ccv-header">
-                <div class="ccv-logo">${icons.logo}<span>CCV Dev Tools</span></div>
+                <div class="ccv-logo">${icons.logo}<span>CCV Dev Tools</span>${getConfigStatusIcon()}</div>
                 <div class="ccv-header-actions">
-                    <button class="ccv-btn-icon" data-action="collapse" title="Compact view">${icons.collapse}</button>
-                    <button class="ccv-btn-icon" data-action="hide" title="Hide">${icons.close}</button>
+                    <button class="ccv-btn-icon" data-action="collapse" data-tooltip="Compact view">${icons.collapse}</button>
+                    <button class="ccv-btn-icon" data-action="hide" data-tooltip="Hide">${icons.close}</button>
                 </div>
             </div>
             <div class="ccv-tabs">
@@ -622,14 +731,14 @@ const CCVToolbar = (() => {
                     <div class="ccv-section">
                         <div class="ccv-section-header">
                             <span class="ccv-section-title">Quick Links</span>
-                            <button class="ccv-btn-icon" data-action="add-url" title="Add URL">${icons.add}</button>
+                            <button class="ccv-btn-icon" data-action="add-url" data-tooltip="Add URL">${icons.add}</button>
                         </div>
                         <div class="ccv-url-grid" id="ccv-urls-list"></div>
                     </div>
                     <div class="ccv-section">
                         <div class="ccv-section-header">
                             <span class="ccv-section-title">Domains</span>
-                            <button class="ccv-btn-icon" data-action="add-domain" title="Add Domain">${icons.add}</button>
+                            <button class="ccv-btn-icon" data-action="add-domain" data-tooltip="Add Domain">${icons.add}</button>
                         </div>
                         <div class="ccv-list" id="ccv-domains-list"></div>
                     </div>
@@ -638,7 +747,7 @@ const CCVToolbar = (() => {
                     <div class="ccv-section">
                         <div class="ccv-section-header">
                             <span class="ccv-section-title">Webshop Themes</span>
-                            <button class="ccv-btn-icon" data-action="add-webshop-theme" title="Add Theme">${icons.add}</button>
+                            <button class="ccv-btn-icon" data-action="add-webshop-theme" data-tooltip="Add Theme">${icons.add}</button>
                         </div>
                         <div class="ccv-webshop-themes" id="ccv-webshop-themes"></div>
                     </div>
@@ -690,18 +799,29 @@ const CCVToolbar = (() => {
                     </div>
                     <div class="ccv-settings-group">
                         <label class="ccv-settings-label">Cross-Domain Defaults</label>
-                        <span class="ccv-hint">Save your current layout preferences as the default for all new domains/webshops.</span>
-                        ${(() => {
-                            const matchStatus = isCurrentMatchingDefaults();
-                            if (matchStatus === null) {
-                                return `<div class="ccv-defaults-status ccv-defaults-none">${icons.info}<span>No defaults saved yet</span></div>`;
-                            } else if (matchStatus) {
-                                return `<div class="ccv-defaults-status ccv-defaults-match">${icons.check}<span>Current settings match defaults</span></div>`;
-                            } else {
-                                return `<div class="ccv-defaults-status ccv-defaults-different">${icons.alert}<span>Current settings differ from defaults</span></div>`;
-                            }
-                        })()}
-                        <button class="ccv-btn ccv-btn-primary" data-action="save-defaults" style="margin-top: 8px;">${icons.star}<span>Save as Default</span></button>
+                        <div class="ccv-defaults-card">
+                            <div class="ccv-defaults-toggle-row">
+                                <div class="ccv-defaults-toggle-info">
+                                    <span class="ccv-defaults-toggle-title">Sync with defaults</span>
+                                    <span class="ccv-defaults-toggle-desc">Layout settings sync across domains</span>
+                                </div>
+                                <label class="ccv-toggle">
+                                    <input type="checkbox" id="ccv-uses-default-config" ${config.usesDefaultConfig ? 'checked' : ''}>
+                                    <span class="ccv-toggle-slider"></span>
+                                </label>
+                            </div>
+                            ${(() => {
+                                const hasDefaults = getDefaultsFromCookie() !== null;
+                                if (!hasDefaults) {
+                                    return `<div class="ccv-defaults-status ccv-defaults-none">${icons.info}<span>No defaults saved yet</span></div>`;
+                                } else if (config.usesDefaultConfig) {
+                                    return `<div class="ccv-defaults-status ccv-defaults-match">${icons.check}<span>Using synced defaults</span></div>`;
+                                } else {
+                                    return `<div class="ccv-defaults-status ccv-defaults-different">${icons.alert}<span>Custom settings for this domain</span></div>`;
+                                }
+                            })()}
+                            <button class="ccv-btn ccv-btn-primary ccv-btn-full" data-action="save-defaults">${icons.star}<span>Save Current as Default</span></button>
+                        </div>
                     </div>
                     <div class="ccv-settings-group">
                         <label class="ccv-settings-label">Data</label>
@@ -729,12 +849,13 @@ const CCVToolbar = (() => {
             const urlBtn = (u, cls) => {
                 const color = getItemColor(u.color);
                 const style = color ? `style="--item-color: ${color}"` : '';
-                return `<button class="${cls} ${color ? 'has-color' : ''}" data-url-id="${u.id}" title="${u.name}" ${style}>${icons[u.icon] || icons.link}${cls.includes('circle') || cls.includes('minimal') ? '' : `<span>${u.name}</span>`}</button>`;
+                const fullUrl = u.url.startsWith('http') ? u.url : window.location.origin + u.url;
+                return `<a href="${fullUrl}" class="${cls} ${color ? 'has-color' : ''}" data-url-id="${u.id}" data-tooltip="${u.name}" ${style}>${icons[u.icon] || icons.link}${cls.includes('circle') || cls.includes('minimal') ? '' : `<span>${u.name}</span>`}</a>`;
             };
             const domainBtn = (d, cls) => {
                 const color = getItemColor(d.color);
                 const style = color ? `style="--item-color: ${color}"` : '';
-                return `<button class="${cls} ${color ? 'has-color' : ''}" data-domain-id="${d.id}" title="${d.name}" ${style}>${icons[d.icon] || icons.globe}${cls.includes('circle') || cls.includes('minimal') ? '' : `<span>${d.name}</span>`}</button>`;
+                return `<a href="${d.url}" class="${cls} ${color ? 'has-color' : ''}" data-domain-id="${d.id}" data-tooltip="${d.name}" ${style}>${icons[d.icon] || icons.globe}${cls.includes('circle') || cls.includes('minimal') ? '' : `<span>${d.name}</span>`}</a>`;
             };
 
             switch (config.compactLayout) {
@@ -755,10 +876,10 @@ const CCVToolbar = (() => {
                 case 'minimal':
                     return `
                         <div class="ccv-compact-minimal">
-                            <button class="ccv-minimal-btn ccv-minimal-control" data-action="expand" title="Expand">${icons.expand}</button>
+                            <button class="ccv-minimal-btn ccv-minimal-control" data-action="expand" data-tooltip="Expand">${icons.expand}</button>
                             ${compactUrls.map(u => urlBtn(u, 'ccv-minimal-btn')).join('')}
                             ${compactDomains.map(d => domainBtn(d, 'ccv-minimal-btn')).join('')}
-                            <button class="ccv-minimal-btn ccv-minimal-control" data-action="hide" title="Hide">${icons.close}</button>
+                            <button class="ccv-minimal-btn ccv-minimal-control" data-action="hide" data-tooltip="Hide">${icons.close}</button>
                         </div>
                     `;
                 default:
@@ -778,13 +899,72 @@ const CCVToolbar = (() => {
                 <div class="ccv-header ccv-header-compact">
                     <div class="ccv-logo">${icons.logo}</div>
                     <div class="ccv-header-actions">
-                        <button class="ccv-btn-icon" data-action="expand" title="Expand">${icons.expand}</button>
-                        <button class="ccv-btn-icon" data-action="hide" title="Hide">${icons.close}</button>
+                        <button class="ccv-btn-icon" data-action="expand" data-tooltip="Expand">${icons.expand}</button>
+                        <button class="ccv-btn-icon" data-action="hide" data-tooltip="Hide">${icons.close}</button>
                     </div>
                 </div>
                 ${renderItems()}
             `;
         }
+        
+        // Add Ctrl+click handler for compact links
+        panel.querySelectorAll('a[data-url-id], a[data-domain-id]').forEach(link => {
+            link.onclick = (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.open(link.href, '_blank');
+                    return false;
+                }
+            };
+            
+            // Add right-click context menu for compact links
+            link.oncontextmenu = (e) => {
+                const domainId = link.dataset.domainId;
+                const urlId = link.dataset.urlId;
+                
+                if (domainId) {
+                    const domain = config.domains.find(d => d.id === domainId);
+                    if (!domain) return;
+                    
+                    showContextMenu(e, [
+                        { icon: icons.open, label: 'Open', action: () => window.location.href = domain.url },
+                        { icon: icons.externalLink, label: 'Open in new tab', action: () => window.open(domain.url, '_blank') },
+                        { icon: icons.copy, label: 'Copy URL', action: () => copyToClipboard(domain.url) },
+                        { separator: true },
+                        { icon: icons.edit, label: 'Edit', action: () => showDomainModal(domain) },
+                        { icon: icons.delete, label: 'Delete', danger: true, action: () => {
+                            showDeleteConfirmation('Domain', domain.name, () => {
+                                config.domains = config.domains.filter(d => d.id !== domain.id);
+                                saveConfig();
+                                render();
+                                showToast('Domain deleted');
+                            });
+                        }}
+                    ]);
+                } else if (urlId) {
+                    const url = config.urls.find(u => u.id === urlId);
+                    if (!url) return;
+                    
+                    const fullUrl = url.url.startsWith('http') ? url.url : window.location.origin + url.url;
+                    showContextMenu(e, [
+                        { icon: icons.open, label: 'Open', action: () => window.location.href = fullUrl },
+                        { icon: icons.externalLink, label: 'Open in new tab', action: () => window.open(fullUrl, '_blank') },
+                        { icon: icons.copy, label: 'Copy URL', action: () => copyToClipboard(url.url) },
+                        { separator: true },
+                        { icon: icons.edit, label: 'Edit', action: () => showUrlModal(url) },
+                        { icon: icons.delete, label: 'Delete', danger: true, action: () => {
+                            showDeleteConfirmation('URL', url.name, () => {
+                                config.urls = config.urls.filter(u => u.id !== url.id);
+                                saveConfig();
+                                render();
+                                showToast('URL deleted');
+                            });
+                        }}
+                    ]);
+                }
+            };
+        });
         
         return panel;
     };
@@ -811,6 +991,7 @@ const CCVToolbar = (() => {
         `;
 
         document.body.appendChild(overlay);
+        setupTooltips(overlay);
         requestAnimationFrame(() => overlay.classList.add('active'));
 
         const closeModal = () => {
@@ -858,7 +1039,7 @@ const CCVToolbar = (() => {
                 </div>
                 <div class="ccv-icon-picker" id="ccv-domain-icon-picker">
                     ${iconOptions.map(i => `
-                        <button type="button" class="ccv-icon-option ${selectedIcon === i ? 'active' : ''}" data-icon="${i}" title="${i}">
+                        <button type="button" class="ccv-icon-option ${selectedIcon === i ? 'active' : ''}" data-icon="${i}" data-tooltip="${i}">
                             ${icons[i]}
                         </button>
                     `).join('')}
@@ -869,10 +1050,16 @@ const CCVToolbar = (() => {
                 <input type="hidden" id="ccv-domain-color" value="${selectedColor}">
                 <div class="ccv-color-picker" id="ccv-domain-color-picker">
                     ${itemColors.map(c => `
-                        <button type="button" class="ccv-color-option ${selectedColor === c.id ? 'active' : ''}" data-color="${c.id}" title="${c.name}" style="${c.color ? `--item-color: ${c.color}` : ''}">
+                        <button type="button" class="ccv-color-option ${selectedColor === c.id ? 'active' : ''}" data-color="${c.id}" data-tooltip="${c.name}" style="${c.color ? `--item-color: ${c.color}` : ''}">
                             ${c.color ? '' : '×'}
                         </button>
                     `).join('')}
+                    <div class="ccv-color-custom-wrapper">
+                        <input type="color" class="ccv-color-custom-input" id="ccv-domain-color-custom" value="${selectedColor && selectedColor.startsWith('#') ? selectedColor : '#6366f1'}" data-tooltip="Custom color">
+                        <button type="button" class="ccv-color-option ccv-color-custom-btn ${selectedColor && selectedColor.startsWith('#') ? 'active' : ''}" data-color="custom" data-tooltip="Custom" style="${selectedColor && selectedColor.startsWith('#') ? `--item-color: ${selectedColor}` : ''}">
+                            ${icons.palette}
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="ccv-input-group">
@@ -926,13 +1113,37 @@ const CCVToolbar = (() => {
             }
         });
 
-        modal.querySelector('#ccv-domain-color-picker').addEventListener('click', (e) => {
+        const domainColorPicker = modal.querySelector('#ccv-domain-color-picker');
+        const domainColorCustomInput = modal.querySelector('#ccv-domain-color-custom');
+        const domainColorCustomBtn = modal.querySelector('.ccv-color-custom-btn');
+        
+        domainColorPicker.addEventListener('click', (e) => {
             const btn = e.target.closest('.ccv-color-option');
             if (btn) {
                 modal.querySelectorAll('.ccv-color-option').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                document.getElementById('ccv-domain-color').value = btn.dataset.color;
+                if (btn.dataset.color === 'custom') {
+                    document.getElementById('ccv-domain-color').value = domainColorCustomInput.value;
+                    domainColorCustomBtn.style.setProperty('--item-color', domainColorCustomInput.value);
+                } else {
+                    document.getElementById('ccv-domain-color').value = btn.dataset.color;
+                }
             }
+        });
+        
+        domainColorCustomInput.addEventListener('input', (e) => {
+            domainColorCustomBtn.style.setProperty('--item-color', e.target.value);
+            if (domainColorCustomBtn.classList.contains('active')) {
+                document.getElementById('ccv-domain-color').value = e.target.value;
+            }
+        });
+        
+        domainColorCustomInput.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modal.querySelectorAll('.ccv-color-option').forEach(b => b.classList.remove('active'));
+            domainColorCustomBtn.classList.add('active');
+            document.getElementById('ccv-domain-color').value = e.target.value;
+            domainColorCustomBtn.style.setProperty('--item-color', e.target.value);
         });
     };
 
@@ -963,7 +1174,7 @@ const CCVToolbar = (() => {
                 </div>
                 <div class="ccv-icon-picker" id="ccv-icon-picker">
                     ${iconOptions.map(i => `
-                        <button type="button" class="ccv-icon-option ${selectedIcon === i ? 'active' : ''}" data-icon="${i}" title="${i}">
+                        <button type="button" class="ccv-icon-option ${selectedIcon === i ? 'active' : ''}" data-icon="${i}" data-tooltip="${i}">
                             ${icons[i]}
                         </button>
                     `).join('')}
@@ -974,10 +1185,16 @@ const CCVToolbar = (() => {
                 <input type="hidden" id="ccv-url-color" value="${selectedColor}">
                 <div class="ccv-color-picker" id="ccv-url-color-picker">
                     ${itemColors.map(c => `
-                        <button type="button" class="ccv-color-option ${selectedColor === c.id ? 'active' : ''}" data-color="${c.id}" title="${c.name}" style="${c.color ? `--item-color: ${c.color}` : ''}">
+                        <button type="button" class="ccv-color-option ${selectedColor === c.id ? 'active' : ''}" data-color="${c.id}" data-tooltip="${c.name}" style="${c.color ? `--item-color: ${c.color}` : ''}">
                             ${c.color ? '' : '×'}
                         </button>
                     `).join('')}
+                    <div class="ccv-color-custom-wrapper">
+                        <input type="color" class="ccv-color-custom-input" id="ccv-url-color-custom" value="${selectedColor && selectedColor.startsWith('#') ? selectedColor : '#6366f1'}" data-tooltip="Custom color">
+                        <button type="button" class="ccv-color-option ccv-color-custom-btn ${selectedColor && selectedColor.startsWith('#') ? 'active' : ''}" data-color="custom" data-tooltip="Custom" style="${selectedColor && selectedColor.startsWith('#') ? `--item-color: ${selectedColor}` : ''}">
+                            ${icons.palette}
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="ccv-input-group">
@@ -1031,13 +1248,37 @@ const CCVToolbar = (() => {
             }
         });
 
-        modal.querySelector('#ccv-url-color-picker').addEventListener('click', (e) => {
+        const urlColorPicker = modal.querySelector('#ccv-url-color-picker');
+        const urlColorCustomInput = modal.querySelector('#ccv-url-color-custom');
+        const urlColorCustomBtn = urlColorPicker.querySelector('.ccv-color-custom-btn');
+        
+        urlColorPicker.addEventListener('click', (e) => {
             const btn = e.target.closest('.ccv-color-option');
             if (btn) {
                 modal.querySelectorAll('.ccv-color-option').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                document.getElementById('ccv-url-color').value = btn.dataset.color;
+                if (btn.dataset.color === 'custom') {
+                    document.getElementById('ccv-url-color').value = urlColorCustomInput.value;
+                    urlColorCustomBtn.style.setProperty('--item-color', urlColorCustomInput.value);
+                } else {
+                    document.getElementById('ccv-url-color').value = btn.dataset.color;
+                }
             }
+        });
+        
+        urlColorCustomInput.addEventListener('input', (e) => {
+            urlColorCustomBtn.style.setProperty('--item-color', e.target.value);
+            if (urlColorCustomBtn.classList.contains('active')) {
+                document.getElementById('ccv-url-color').value = e.target.value;
+            }
+        });
+        
+        urlColorCustomInput.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modal.querySelectorAll('.ccv-color-option').forEach(b => b.classList.remove('active'));
+            urlColorCustomBtn.classList.add('active');
+            document.getElementById('ccv-url-color').value = e.target.value;
+            urlColorCustomBtn.style.setProperty('--item-color', e.target.value);
         });
     };
 
@@ -1051,7 +1292,8 @@ const CCVToolbar = (() => {
             initialView: config.initialView,
             webshopThemes: config.webshopThemes,
             customColors: config.customColors,
-            position: config.position
+            position: config.position,
+            usesDefaultConfig: config.usesDefaultConfig
         }, null, 2);
         const blob = new Blob([data], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -1084,6 +1326,7 @@ const CCVToolbar = (() => {
                     if (data.webshopThemes) config.webshopThemes = data.webshopThemes;
                     if (data.customColors) config.customColors = data.customColors;
                     if (data.position) config.position = data.position;
+                    if (typeof data.usesDefaultConfig === 'boolean') config.usesDefaultConfig = data.usesDefaultConfig;
                     applyTheme();
                     saveConfig();
                     render();
@@ -1105,27 +1348,24 @@ const CCVToolbar = (() => {
             const color = getItemColor(domain.color);
             const colorStyle = color ? `style="--item-color: ${color}"` : '';
             return `
-            <div class="ccv-domain-item ${color ? 'has-color' : ''}" data-domain-id="${domain.id}" ${colorStyle}>
+            <a href="${domain.url}" class="ccv-domain-item ${color ? 'has-color' : ''}" data-domain-id="${domain.id}" ${colorStyle}>
                 <div class="ccv-domain-main">
                     ${icons[domain.icon] || icons.globe}
                     <span>${domain.name}</span>
                     ${domain.showInCompact ? `<span class="ccv-compact-badge">${icons.star}</span>` : ''}
                 </div>
-            </div>
+            </a>
         `}).join('');
 
         container.querySelectorAll('.ccv-domain-item').forEach(item => {
             item.onclick = (e) => {
-                const domain = config.domains.find(d => d.id === item.dataset.domainId);
-                if (!domain) return;
-                
                 if (e.ctrlKey || e.metaKey) {
-                    openUrlNewTab('/', domain.url);
-                } else {
-                    navigateUrl('/', domain.url);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.open(item.href, '_blank');
+                    return false;
                 }
             };
-            
             item.oncontextmenu = (e) => {
                 const domain = config.domains.find(d => d.id === item.dataset.domainId);
                 if (!domain) return;
@@ -1156,28 +1396,26 @@ const CCVToolbar = (() => {
         container.innerHTML = config.urls.map(url => {
             const color = getItemColor(url.color);
             const colorStyle = color ? `style="--item-color: ${color}"` : '';
+            const fullUrl = url.url.startsWith('http') ? url.url : window.location.origin + url.url;
             return `
-            <div class="ccv-url-item ${color ? 'has-color' : ''}" data-url-id="${url.id}" ${colorStyle}>
+            <a href="${fullUrl}" class="ccv-url-item ${color ? 'has-color' : ''}" data-url-id="${url.id}" ${colorStyle}>
                 <div class="ccv-url-main">
                     ${icons[url.icon] || icons.link}
                     <span>${url.name}</span>
                     ${url.showInCompact ? `<span class="ccv-compact-badge">${icons.star}</span>` : ''}
                 </div>
-            </div>
+            </a>
         `}).join('');
 
         container.querySelectorAll('.ccv-url-item').forEach(item => {
             item.onclick = (e) => {
-                const url = config.urls.find(u => u.id === item.dataset.urlId);
-                if (!url) return;
-                
                 if (e.ctrlKey || e.metaKey) {
-                    openUrlNewTab(url.url);
-                } else {
-                    navigateUrl(url.url);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.open(item.href, '_blank');
+                    return false;
                 }
             };
-            
             item.oncontextmenu = (e) => {
                 const url = config.urls.find(u => u.id === item.dataset.urlId);
                 if (!url) return;
@@ -1275,6 +1513,7 @@ const CCVToolbar = (() => {
         if (layoutContainer) {
             layoutContainer.innerHTML = compactLayouts.map(layout => `
                 <div class="ccv-theme-option ccv-layout-option ${config.compactLayout === layout.id ? 'active' : ''}" data-layout="${layout.id}">
+                    <div class="preview">${layout.icon}</div>
                     <span class="name">${layout.name}</span>
                 </div>
             `).join('');
@@ -1602,7 +1841,6 @@ const CCVToolbar = (() => {
         const domainId = e.target.closest('[data-domain-id]')?.dataset.domainId;
         const urlId = e.target.closest('[data-url-id]')?.dataset.urlId;
         const id = e.target.closest('[data-id]')?.dataset.id;
-        const compactBtn = e.target.closest('.ccv-compact-btn, .ccv-circle-btn, .ccv-horizontal-btn, .ccv-minimal-btn');
 
         if (tab) {
             elements.toolbar.querySelectorAll('.ccv-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
@@ -1635,33 +1873,6 @@ const CCVToolbar = (() => {
             }
         }
 
-        if (compactBtn && !compactBtn.dataset.action) {
-            const cDomainId = compactBtn.dataset.domainId;
-            const cUrlId = compactBtn.dataset.urlId;
-            const openInNewTab = e.ctrlKey || e.metaKey;
-            
-            if (cDomainId) {
-                const domain = config.domains.find(d => d.id === cDomainId);
-                if (domain) {
-                    if (openInNewTab) {
-                        window.open(domain.url, '_blank');
-                    } else {
-                        navigateUrl(domain.url);
-                    }
-                }
-            } else if (cUrlId) {
-                const url = config.urls.find(u => u.id === cUrlId);
-                if (url) {
-                    const fullUrl = url.url.startsWith('http') ? url.url : window.location.origin + url.url;
-                    if (openInNewTab) {
-                        window.open(fullUrl, '_blank');
-                    } else {
-                        navigateUrl(url.url, window.location.origin);
-                    }
-                }
-            }
-            return;
-        }
 
         if (urlId && !action && !e.target.closest('.ccv-url-actions')) {
             const url = config.urls.find(u => u.id === urlId);
@@ -1832,6 +2043,7 @@ const CCVToolbar = (() => {
             renderWebshopThemes();
         }
 
+        setupTooltips(elements.toolbar);
         requestAnimationFrame(constrainPosition);
     };
 
@@ -1860,6 +2072,74 @@ const CCVToolbar = (() => {
         render();
 
         elements.toolbar.addEventListener('click', handleClick);
+        elements.toolbar.addEventListener('change', (e) => {
+            if (e.target.id === 'ccv-uses-default-config') {
+                config.usesDefaultConfig = e.target.checked;
+                saveConfig();
+                
+                // Update status indicators without re-rendering
+                const updateDefaultsStatus = () => {
+                    const hasDefaults = getDefaultsFromCookie() !== null;
+                    
+                    // Update card status
+                    const statusContainer = elements.toolbar.querySelector('.ccv-defaults-card .ccv-defaults-status');
+                    if (statusContainer) {
+                        if (!hasDefaults) {
+                            statusContainer.className = 'ccv-defaults-status ccv-defaults-none';
+                            statusContainer.innerHTML = `${icons.info}<span>No defaults saved yet</span>`;
+                        } else if (config.usesDefaultConfig) {
+                            statusContainer.className = 'ccv-defaults-status ccv-defaults-match';
+                            statusContainer.innerHTML = `${icons.check}<span>Using synced defaults</span>`;
+                        } else {
+                            statusContainer.className = 'ccv-defaults-status ccv-defaults-different';
+                            statusContainer.innerHTML = `${icons.alert}<span>Custom settings for this domain</span>`;
+                        }
+                    }
+                    
+                    // Update header icon
+                    const headerIcon = elements.toolbar.querySelector('.ccv-config-status');
+                    if (headerIcon) {
+                        if (!hasDefaults) {
+                            headerIcon.className = 'ccv-config-status ccv-config-none';
+                            headerIcon.dataset.tooltip = 'No defaults saved';
+                            headerIcon.innerHTML = icons.info;
+                        } else if (config.usesDefaultConfig) {
+                            headerIcon.className = 'ccv-config-status ccv-config-synced';
+                            headerIcon.dataset.tooltip = 'Synced with defaults';
+                            headerIcon.innerHTML = icons.check;
+                        } else {
+                            headerIcon.className = 'ccv-config-status ccv-config-custom';
+                            headerIcon.dataset.tooltip = 'Custom config';
+                            headerIcon.innerHTML = icons.alert;
+                        }
+                    }
+                };
+                
+                // If toggled on, immediately apply defaults
+                if (config.usesDefaultConfig) {
+                    const defaults = getDefaultsFromCookie();
+                    if (defaults) {
+                        config.mode = defaults.mode ?? config.mode;
+                        config.color = defaults.color ?? config.color;
+                        config.compactLayout = defaults.compactLayout ?? config.compactLayout;
+                        config.initialView = defaults.initialView ?? config.initialView;
+                        config.customColors = defaults.customColors ?? config.customColors;
+                        config.position = defaults.position ?? config.position;
+                        saveConfig();
+                        applyTheme();
+                        renderThemeGrid();
+                        updateDefaultsStatus();
+                        showToast('Now using default config');
+                    } else {
+                        showToast('No defaults saved yet - save defaults first');
+                        updateDefaultsStatus();
+                    }
+                } else {
+                    updateDefaultsStatus();
+                    showToast('Using custom config for this domain');
+                }
+            }
+        });
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
         window.addEventListener('resize', constrainPosition);
