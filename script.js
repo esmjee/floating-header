@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '1.2.0';
+    const VERSION = '1.2.1';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     
@@ -317,7 +317,6 @@ const CCVToolbar = (() => {
             }
         }
         
-        // If usesDefaultConfig is true, apply defaults from cookie for layout settings
         if (config.usesDefaultConfig) {
             const defaults = getDefaultsFromCookie();
             if (defaults) {
@@ -337,7 +336,7 @@ const CCVToolbar = (() => {
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
 
-    const showToast = (message) => {
+    const showToast = (message, isHtml = false) => {
         const existing = document.querySelector('.ccv-toast');
         if (existing) existing.remove();
         
@@ -345,17 +344,31 @@ const CCVToolbar = (() => {
         toast.className = 'ccv-toast';
         toast.setAttribute('data-mode', config.mode);
         toast.setAttribute('data-color', config.color === 'default' ? '' : config.color);
-        toast.textContent = message;
+        
+        if (isHtml) {
+            toast.innerHTML = `
+                <span class="ccv-toast-message">${message}</span>
+                <button class="ccv-toast-close">${icons.close}</button>
+            `;
+            toast.querySelector('.ccv-toast-close').onclick = () => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            };
+        } else {
+            toast.textContent = message;
+        }
         document.body.appendChild(toast);
         
         requestAnimationFrame(() => toast.classList.add('show'));
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, 2000);
+        
+        if (!isHtml) {
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
     };
 
-    // Custom tooltip system
     let tooltipElement = null;
     let tooltipTimeout = null;
     
@@ -384,7 +397,6 @@ const CCVToolbar = (() => {
             let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
             let top = rect.top - tooltipRect.height - 8;
             
-            // Keep tooltip within viewport
             if (left < 8) left = 8;
             if (left + tooltipRect.width > window.innerWidth - 8) {
                 left = window.innerWidth - tooltipRect.width - 8;
@@ -645,11 +657,37 @@ const CCVToolbar = (() => {
 
     let themeSwitchingInProgress = false;
 
+    const checkBackendLogin = async () => {
+        try {
+            const loginUrl = `${window.location.origin}/onderhoud/Login.php`;
+            const response = await fetch(loginUrl, {
+                method: 'GET',
+                credentials: 'include',
+                redirect: 'follow'
+            });
+            
+            const finalUrl = response.url;
+            const isLoginPage = finalUrl.includes('/onderhoud/Login.php');
+            
+            return !isLoginPage;
+        } catch (error) {
+            console.error('Login check failed:', error);
+            return false;
+        }
+    };
+
     const switchWebshopTheme = async (themeId) => {
         if (themeSwitchingInProgress) return;
         
         const theme = config.webshopThemes.find(t => t.id === themeId);
         if (!theme) return;
+        
+        const isLoggedIn = await checkBackendLogin();
+        if (!isLoggedIn) {
+            const loginUrl = `${window.location.origin}/onderhoud/Login.php`;
+            showToast(`You are required to login <a href="${loginUrl}" target="_blank">here</a> to use this feature.`, true);
+            return;
+        }
         
         themeSwitchingInProgress = true;
         const container = document.getElementById('ccv-webshop-themes');
@@ -907,7 +945,6 @@ const CCVToolbar = (() => {
             `;
         }
         
-        // Add Ctrl+click handler for compact links
         panel.querySelectorAll('a[data-url-id], a[data-domain-id]').forEach(link => {
             link.onclick = (e) => {
                 if (e.ctrlKey || e.metaKey) {
@@ -918,7 +955,6 @@ const CCVToolbar = (() => {
                 }
             };
             
-            // Add right-click context menu for compact links
             link.oncontextmenu = (e) => {
                 const domainId = link.dataset.domainId;
                 const urlId = link.dataset.urlId;
@@ -2077,11 +2113,9 @@ const CCVToolbar = (() => {
                 config.usesDefaultConfig = e.target.checked;
                 saveConfig();
                 
-                // Update status indicators without re-rendering
                 const updateDefaultsStatus = () => {
                     const hasDefaults = getDefaultsFromCookie() !== null;
                     
-                    // Update card status
                     const statusContainer = elements.toolbar.querySelector('.ccv-defaults-card .ccv-defaults-status');
                     if (statusContainer) {
                         if (!hasDefaults) {
@@ -2096,7 +2130,6 @@ const CCVToolbar = (() => {
                         }
                     }
                     
-                    // Update header icon
                     const headerIcon = elements.toolbar.querySelector('.ccv-config-status');
                     if (headerIcon) {
                         if (!hasDefaults) {
@@ -2115,7 +2148,6 @@ const CCVToolbar = (() => {
                     }
                 };
                 
-                // If toggled on, immediately apply defaults
                 if (config.usesDefaultConfig) {
                     const defaults = getDefaultsFromCookie();
                     if (defaults) {
