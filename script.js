@@ -1,7 +1,28 @@
 const CCVToolbar = (() => {
-    const VERSION = '1.2.2';
+    const VERSION = '1.2.3';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
+    const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
+    
+    let translations = {};
+    
+    const t = (key) => translations[key] || key;
+    
+    const loadTranslations = async (lang) => {
+        if (lang === 'en') {
+            translations = {};
+            return;
+        }
+        try {
+            const response = await fetch(`${LANGUAGES_URL}/${lang}.json`);
+            if (response.ok) {
+                translations = await response.json();
+            }
+        } catch (e) {
+            console.warn('Failed to load translations:', e);
+            translations = {};
+        }
+    };
     
     const defaultConfig = {
         mode: 'light',
@@ -13,6 +34,7 @@ const CCVToolbar = (() => {
         compactLayout: 'default',
         customColors: [],
         usesDefaultConfig: true,
+        language: 'en',
         domains: [
             { id: '1', name: 'Hoofd Webshop', url: 'https://ejansen.ccvdev.nl', icon: 'globe', showInCompact: true, color: '' },
             { id: '2', name: 'Admin', url: 'https://ejansen-admin.ccvdev.nl', icon: 'users', showInCompact: false, color: '' },
@@ -298,7 +320,7 @@ const CCVToolbar = (() => {
         const domain = getBaseDomain();
         const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
         document.cookie = `ccv-toolbar-defaults=${value}; domain=${domain}; path=/; expires=${expires}; SameSite=Lax`;
-        showToast('Default settings saved for all domains');
+        showToast(t('Default settings saved for all domains'));
     };
 
     const loadConfig = () => {
@@ -493,7 +515,7 @@ const CCVToolbar = (() => {
     };
 
     const copyToClipboard = (text) => {
-        navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard'));
+        navigator.clipboard.writeText(text).then(() => showToast(t('Copied to clipboard')));
     };
 
     const parseVersion = (versionStr) => {
@@ -519,7 +541,7 @@ const CCVToolbar = (() => {
             return;
         }
 
-        showToast('Checking for updates...');
+        showToast(t('Checking for updates...'));
 
         try {
             const jsResponse = await fetch(UPDATE_URL_JS + '?t=' + Date.now(), { cache: 'no-store' });
@@ -612,7 +634,7 @@ const CCVToolbar = (() => {
         if (copyJsBtn) {
             copyJsBtn.onclick = () => {
                 navigator.clipboard.writeText(newScript).then(() => {
-                    showToast('JavaScript copied! Paste it in your extension.');
+                    showToast(t('JavaScript copied! Paste it in your extension.'));
                     copyJsBtn.innerHTML = `<span style="${smallIcon}">${icons.check}</span><span style="margin-left: 6px;">Copied!</span>`;
                     setTimeout(() => {
                         copyJsBtn.innerHTML = `<span style="${smallIcon}">${icons.code}</span><span style="margin-left: 6px;">Copy JavaScript</span>`;
@@ -749,11 +771,11 @@ const CCVToolbar = (() => {
         const getConfigStatusIcon = () => {
             const hasDefaults = getDefaultsFromCookie() !== null;
             if (!hasDefaults) {
-                return `<div class="ccv-config-status ccv-config-none" data-tooltip="No defaults saved">${icons.info}</div>`;
+                return `<div class="ccv-config-status ccv-config-none" data-tooltip="${t('No defaults saved')}">${icons.info}</div>`;
             } else if (config.usesDefaultConfig) {
-                return `<div class="ccv-config-status ccv-config-synced" data-tooltip="Synced with defaults">${icons.check}</div>`;
+                return `<div class="ccv-config-status ccv-config-synced" data-tooltip="${t('Synced with defaults')}">${icons.check}</div>`;
             } else {
-                return `<div class="ccv-config-status ccv-config-custom" data-tooltip="Custom config">${icons.alert}</div>`;
+                return `<div class="ccv-config-status ccv-config-custom" data-tooltip="${t('Custom config')}">${icons.alert}</div>`;
             }
         };
         
@@ -761,28 +783,28 @@ const CCVToolbar = (() => {
             <div class="ccv-header">
                 <div class="ccv-logo">${icons.logo}<span>CCV Dev Tools</span>${getConfigStatusIcon()}</div>
                 <div class="ccv-header-actions">
-                    <button class="ccv-btn-icon" data-action="collapse" data-tooltip="Compact view">${icons.collapse}</button>
-                    <button class="ccv-btn-icon" data-action="hide" data-tooltip="Hide">${icons.close}</button>
+                    <button class="ccv-btn-icon" data-action="collapse" data-tooltip="${t('Compact view')}">${icons.collapse}</button>
+                    <button class="ccv-btn-icon" data-action="hide" data-tooltip="${t('Hide')}">${icons.close}</button>
                 </div>
             </div>
             <div class="ccv-tabs">
-                <button class="ccv-tab active" data-tab="links">Links</button>
-                <button class="ccv-tab" data-tab="actions">Actions</button>
-                <button class="ccv-tab" data-tab="settings">Settings</button>
+                <button class="ccv-tab active" data-tab="links">${t('Links')}</button>
+                <button class="ccv-tab" data-tab="actions">${t('Actions')}</button>
+                <button class="ccv-tab" data-tab="settings">${t('Settings')}</button>
             </div>
             <div class="ccv-content">
                 <div class="ccv-tab-content active" data-content="links">
                     <div class="ccv-section">
                         <div class="ccv-section-header">
-                            <span class="ccv-section-title">Quick Links</span>
-                            <button class="ccv-btn-icon" data-action="add-url" data-tooltip="Add URL">${icons.add}</button>
+                            <span class="ccv-section-title">${t('Quick Links')}</span>
+                            <button class="ccv-btn-icon" data-action="add-url" data-tooltip="${t('Add URL')}">${icons.add}</button>
                         </div>
                         <div class="ccv-url-grid" id="ccv-urls-list"></div>
                     </div>
                     <div class="ccv-section">
                         <div class="ccv-section-header">
-                            <span class="ccv-section-title">Domains</span>
-                            <button class="ccv-btn-icon" data-action="add-domain" data-tooltip="Add Domain">${icons.add}</button>
+                            <span class="ccv-section-title">${t('Domains')}</span>
+                            <button class="ccv-btn-icon" data-action="add-domain" data-tooltip="${t('Add Domain')}">${icons.add}</button>
                         </div>
                         <div class="ccv-list" id="ccv-domains-list"></div>
                     </div>
@@ -790,64 +812,77 @@ const CCVToolbar = (() => {
                 <div class="ccv-tab-content" data-content="actions">
                     <div class="ccv-section">
                         <div class="ccv-section-header">
-                            <span class="ccv-section-title">Webshop Themes</span>
-                            <button class="ccv-btn-icon" data-action="add-webshop-theme" data-tooltip="Add Theme">${icons.add}</button>
+                            <span class="ccv-section-title">${t('Webshop Themes')}</span>
+                            <button class="ccv-btn-icon" data-action="add-webshop-theme" data-tooltip="${t('Add Theme')}">${icons.add}</button>
                         </div>
                         <div class="ccv-webshop-themes" id="ccv-webshop-themes"></div>
                     </div>
                     <div class="ccv-section">
                         <div class="ccv-section-header">
-                            <span class="ccv-section-title">Cookies</span>
+                            <span class="ccv-section-title">${t('Cookies')}</span>
                         </div>
                         <button class="ccv-btn ccv-btn-full" data-action="clear-cookies">
                             ${icons.delete}
-                            <span>Clear cookie preferences</span>
+                            <span>${t('Clear cookie preferences')}</span>
                         </button>
-                        <p class="ccv-hint">Removes CCVGoPopUpClicked and cookie_preference to show the cookie modal again.</p>
+                        <p class="ccv-hint">${t('Removes CCVGoPopUpClicked and cookie_preference to show the cookie modal again.')}</p>
                     </div>
                 </div>
                 <div class="ccv-tab-content" data-content="settings">
                     <div class="ccv-settings-group">
-                        <label class="ccv-settings-label">Theme</label>
+                        <label class="ccv-settings-label">${t('Theme')}</label>
                         <div class="ccv-theme-grid" style="grid-template-columns: repeat(2, 1fr);" id="ccv-mode-grid"></div>
                     </div>
                     <div class="ccv-settings-group">
-                        <label class="ccv-settings-label">Color</label>
+                        <label class="ccv-settings-label">${t('Color')}</label>
                         <div class="ccv-theme-grid" id="ccv-color-grid"></div>
                     </div>
                     <div class="ccv-settings-group">
-                        <label class="ccv-settings-label">Compact Layout</label>
+                        <label class="ccv-settings-label">${t('Compact Layout')}</label>
                         <div class="ccv-theme-grid" style="grid-template-columns: repeat(4, 1fr);" id="ccv-layout-grid"></div>
                     </div>
                     <div class="ccv-settings-group">
-                        <label class="ccv-settings-label">Initial State</label>
+                        <label class="ccv-settings-label">${t('Initial State')}</label>
                         <div class="ccv-theme-grid" style="grid-template-columns: repeat(3, 1fr);">
                             <div class="ccv-theme-option ${config.initialView === 'hidden' ? 'active' : ''}" data-initial-view="hidden">
                                 <div class="preview" style="background: var(--ccv-surface-hover);">${icons.close}</div>
-                                <span class="name">Hidden</span>
+                                <span class="name">${t('Hidden')}</span>
                             </div>
                             <div class="ccv-theme-option ${config.initialView === 'expanded' ? 'active' : ''}" data-initial-view="expanded">
                                 <div class="preview" style="background: var(--ccv-accent);">${icons.expand}</div>
-                                <span class="name">Expanded</span>
+                                <span class="name">${t('Expanded')}</span>
                             </div>
                             <div class="ccv-theme-option ${config.initialView === 'compact' ? 'active' : ''}" data-initial-view="compact">
                                 <div class="preview" style="background: var(--ccv-accent);">${icons.collapse}</div>
-                                <span class="name">Compact</span>
+                                <span class="name">${t('Compact')}</span>
                             </div>
                         </div>
                     </div>
                     <div class="ccv-settings-group">
-                        <label class="ccv-settings-label">Updates</label>
-                        <span class="ccv-hint">Current version: v${VERSION}</span>
-                        <button class="ccv-btn ccv-btn-primary" data-action="check-updates" style="margin-top: 8px; width: 100%; justify-content: center;">${icons.refresh}<span>Check for Updates</span></button>
+                        <label class="ccv-settings-label">${t('Language')}</label>
+                        <div class="ccv-theme-grid" style="grid-template-columns: repeat(2, 1fr);">
+                            <div class="ccv-theme-option ${config.language === 'en' ? 'active' : ''}" data-language="en">
+                                <div class="preview" style="background: var(--ccv-surface-hover); font-size: 16px; font-weight: 600;">EN</div>
+                                <span class="name">English</span>
+                            </div>
+                            <div class="ccv-theme-option ${config.language === 'nl' ? 'active' : ''}" data-language="nl">
+                                <div class="preview" style="background: var(--ccv-surface-hover); font-size: 16px; font-weight: 600;">NL</div>
+                                <span class="name">Nederlands</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="ccv-settings-group">
-                        <label class="ccv-settings-label">Cross-Domain Defaults</label>
+                        <label class="ccv-settings-label">${t('Updates')}</label>
+                        <span class="ccv-hint">${t('Current version')}: v${VERSION}</span>
+                        <button class="ccv-btn ccv-btn-primary" data-action="check-updates" style="margin-top: 8px; width: 100%; justify-content: center;">${icons.refresh}<span>${t('Check for Updates')}</span></button>
+                    </div>
+                    <div class="ccv-settings-group">
+                        <label class="ccv-settings-label">${t('Cross-Domain Defaults')}</label>
                         <div class="ccv-defaults-card">
                             <div class="ccv-defaults-toggle-row">
                                 <div class="ccv-defaults-toggle-info">
-                                    <span class="ccv-defaults-toggle-title">Sync with defaults</span>
-                                    <span class="ccv-defaults-toggle-desc">Layout settings sync across domains</span>
+                                    <span class="ccv-defaults-toggle-title">${t('Sync with defaults')}</span>
+                                    <span class="ccv-defaults-toggle-desc">${t('Layout settings sync across domains')}</span>
                                 </div>
                                 <label class="ccv-toggle">
                                     <input type="checkbox" id="ccv-uses-default-config" ${config.usesDefaultConfig ? 'checked' : ''}>
@@ -857,23 +892,23 @@ const CCVToolbar = (() => {
                             ${(() => {
                                 const hasDefaults = getDefaultsFromCookie() !== null;
                                 if (!hasDefaults) {
-                                    return `<div class="ccv-defaults-status ccv-defaults-none">${icons.info}<span>No defaults saved yet</span></div>`;
+                                    return `<div class="ccv-defaults-status ccv-defaults-none">${icons.info}<span>${t('No defaults saved yet')}</span></div>`;
                                 } else if (config.usesDefaultConfig) {
-                                    return `<div class="ccv-defaults-status ccv-defaults-match">${icons.check}<span>Using synced defaults</span></div>`;
+                                    return `<div class="ccv-defaults-status ccv-defaults-match">${icons.check}<span>${t('Using synced defaults')}</span></div>`;
                                 } else {
-                                    return `<div class="ccv-defaults-status ccv-defaults-different">${icons.alert}<span>Custom settings for this domain</span></div>`;
+                                    return `<div class="ccv-defaults-status ccv-defaults-different">${icons.alert}<span>${t('Custom settings for this domain')}</span></div>`;
                                 }
                             })()}
-                            <button class="ccv-btn ccv-btn-primary ccv-btn-full" data-action="save-defaults">${icons.star}<span>Save Current as Default</span></button>
+                            <button class="ccv-btn ccv-btn-primary ccv-btn-full" data-action="save-defaults">${icons.star}<span>${t('Save Current as Default')}</span></button>
                         </div>
                     </div>
                     <div class="ccv-settings-group">
-                        <label class="ccv-settings-label">Data</label>
+                        <label class="ccv-settings-label">${t('Data')}</label>
                         <div class="ccv-btn-group">
-                            <button class="ccv-btn" data-action="export">${icons.download}<span>Export</span></button>
-                            <button class="ccv-btn" data-action="import">${icons.upload}<span>Import</span></button>
+                            <button class="ccv-btn" data-action="export">${icons.download}<span>${t('Export')}</span></button>
+                            <button class="ccv-btn" data-action="import">${icons.upload}<span>${t('Import')}</span></button>
                         </div>
-                        <button class="ccv-btn ccv-btn-danger" data-action="reset" style="margin-top: 8px;">${icons.trash}<span>Reset Configuration</span></button>
+                        <button class="ccv-btn ccv-btn-danger" data-action="reset" style="margin-top: 8px;">${icons.trash}<span>${t('Reset Configuration')}</span></button>
                     </div>
                 </div>
             </div>
@@ -970,12 +1005,12 @@ const CCVToolbar = (() => {
                     if (!domain) return;
                     
                     showContextMenu(e, [
-                        { icon: icons.open, label: 'Open', action: () => window.location.href = domain.url },
-                        { icon: icons.externalLink, label: 'Open in new tab', action: () => window.open(domain.url, '_blank') },
-                        { icon: icons.copy, label: 'Copy URL', action: () => copyToClipboard(domain.url) },
+                        { icon: icons.open, label: t('Open'), action: () => window.location.href = domain.url },
+                        { icon: icons.externalLink, label: t('Open in new tab'), action: () => window.open(domain.url, '_blank') },
+                        { icon: icons.copy, label: t('Copy URL'), action: () => copyToClipboard(domain.url) },
                         { separator: true },
-                        { icon: icons.edit, label: 'Edit', action: () => showDomainModal(domain) },
-                        { icon: icons.delete, label: 'Delete', danger: true, action: () => {
+                        { icon: icons.edit, label: t('Edit'), action: () => showDomainModal(domain) },
+                        { icon: icons.delete, label: t('Delete'), danger: true, action: () => {
                             showDeleteConfirmation('Domain', domain.name, () => {
                                 config.domains = config.domains.filter(d => d.id !== domain.id);
                                 saveConfig();
@@ -990,12 +1025,12 @@ const CCVToolbar = (() => {
                     
                     const fullUrl = url.url.startsWith('http') ? url.url : window.location.origin + url.url;
                     showContextMenu(e, [
-                        { icon: icons.open, label: 'Open', action: () => window.location.href = fullUrl },
-                        { icon: icons.externalLink, label: 'Open in new tab', action: () => window.open(fullUrl, '_blank') },
-                        { icon: icons.copy, label: 'Copy URL', action: () => copyToClipboard(url.url) },
+                        { icon: icons.open, label: t('Open'), action: () => window.location.href = fullUrl },
+                        { icon: icons.externalLink, label: t('Open in new tab'), action: () => window.open(fullUrl, '_blank') },
+                        { icon: icons.copy, label: t('Copy URL'), action: () => copyToClipboard(url.url) },
                         { separator: true },
-                        { icon: icons.edit, label: 'Edit', action: () => showUrlModal(url) },
-                        { icon: icons.delete, label: 'Delete', danger: true, action: () => {
+                        { icon: icons.edit, label: t('Edit'), action: () => showUrlModal(url) },
+                        { icon: icons.delete, label: t('Delete'), danger: true, action: () => {
                             showDeleteConfirmation('URL', url.name, () => {
                                 config.urls = config.urls.filter(u => u.id !== url.id);
                                 saveConfig();
@@ -1025,9 +1060,9 @@ const CCVToolbar = (() => {
                 </div>
                 <div class="ccv-modal-body">${content}</div>
                 <div class="ccv-modal-footer">
-                    ${onDelete ? `<button class="ccv-btn danger" data-action="delete-modal">${icons.delete} Delete</button>` : ''}
-                    <button class="ccv-btn" data-action="cancel-modal">Cancel</button>
-                    <button class="ccv-btn primary" data-action="save-modal">Save</button>
+                    ${onDelete ? `<button class="ccv-btn danger" data-action="delete-modal">${icons.delete} ${t('Delete')}</button>` : ''}
+                    <button class="ccv-btn" data-action="cancel-modal">${t('Cancel')}</button>
+                    <button class="ccv-btn primary" data-action="save-modal">${t('Save')}</button>
                 </div>
             </div>
         `;
@@ -1062,15 +1097,15 @@ const CCVToolbar = (() => {
         
         const content = `
             <div class="ccv-input-group">
-                <label class="ccv-input-label">Name</label>
+                <label class="ccv-input-label">${t('Name')}</label>
                 <input type="text" class="ccv-input" id="ccv-domain-name" placeholder="e.g. Production" value="${domain?.name || ''}">
             </div>
             <div class="ccv-input-group">
-                <label class="ccv-input-label">URL</label>
+                <label class="ccv-input-label">${t('URL')}</label>
                 <input type="text" class="ccv-input" id="ccv-domain-url" placeholder="e.g. https://myshop.ccvshop.nl" value="${domain?.url || ''}">
             </div>
             <div class="ccv-input-group">
-                <label class="ccv-input-label">Icon</label>
+                <label class="ccv-input-label">${t('Icon')}</label>
                 <input type="hidden" id="ccv-domain-icon" value="${selectedIcon}">
                 <div class="ccv-picker-toggle" id="ccv-domain-icon-toggle">
                     <div class="ccv-picker-preview">
@@ -1088,7 +1123,7 @@ const CCVToolbar = (() => {
                 </div>
             </div>
             <div class="ccv-input-group">
-                <label class="ccv-input-label">Color</label>
+                <label class="ccv-input-label">${t('Color')}</label>
                 <input type="hidden" id="ccv-domain-color" value="${selectedColor}">
                 <div class="ccv-color-picker" id="ccv-domain-color-picker">
                     ${itemColors.map(c => `
@@ -1097,8 +1132,8 @@ const CCVToolbar = (() => {
                         </button>
                     `).join('')}
                     <div class="ccv-color-custom-wrapper">
-                        <input type="color" class="ccv-color-custom-input" id="ccv-domain-color-custom" value="${selectedColor && selectedColor.startsWith('#') ? selectedColor : '#6366f1'}" data-tooltip="Custom color">
-                        <button type="button" class="ccv-color-option ccv-color-custom-btn ${selectedColor && selectedColor.startsWith('#') ? 'active' : ''}" data-color="custom" data-tooltip="Custom" style="${selectedColor && selectedColor.startsWith('#') ? `--item-color: ${selectedColor}` : ''}">
+                        <input type="color" class="ccv-color-custom-input" id="ccv-domain-color-custom" value="${selectedColor && selectedColor.startsWith('#') ? selectedColor : '#6366f1'}" data-tooltip="${t('Custom color')}">
+                        <button type="button" class="ccv-color-option ccv-color-custom-btn ${selectedColor && selectedColor.startsWith('#') ? 'active' : ''}" data-color="custom" data-tooltip="${t('Custom color')}" style="${selectedColor && selectedColor.startsWith('#') ? `--item-color: ${selectedColor}` : ''}">
                             ${icons.palette}
                         </button>
                     </div>
@@ -1107,12 +1142,12 @@ const CCVToolbar = (() => {
             <div class="ccv-input-group">
                 <label class="ccv-checkbox-label">
                     <input type="checkbox" id="ccv-domain-compact" ${domain?.showInCompact ? 'checked' : ''}>
-                    <span>Show in compact view</span>
+                    <span>${t('Show in compact view')}</span>
                 </label>
             </div>
         `;
 
-        const modal = createModal(isEdit ? 'Edit Domain' : 'Add Domain', content, () => {
+        const modal = createModal(isEdit ? t('Edit Domain') : t('Add Domain'), content, () => {
             const name = document.getElementById('ccv-domain-name').value.trim();
             const url = document.getElementById('ccv-domain-url').value.trim();
             const icon = document.getElementById('ccv-domain-icon').value;
@@ -1120,7 +1155,7 @@ const CCVToolbar = (() => {
             const showInCompact = document.getElementById('ccv-domain-compact').checked;
 
             if (!name || !url) {
-                showToast('Please fill in all fields');
+                showToast(t('Please fill in all fields'));
                 return false;
             }
 
@@ -1197,15 +1232,15 @@ const CCVToolbar = (() => {
         
         const content = `
             <div class="ccv-input-group">
-                <label class="ccv-input-label">Name</label>
+                <label class="ccv-input-label">${t('Name')}</label>
                 <input type="text" class="ccv-input" id="ccv-url-name" placeholder="e.g. Admin Panel" value="${urlItem?.name || ''}">
             </div>
             <div class="ccv-input-group">
-                <label class="ccv-input-label">Path</label>
+                <label class="ccv-input-label">${t('Path')}</label>
                 <input type="text" class="ccv-input" id="ccv-url-path" placeholder="e.g. /admin" value="${urlItem?.url || ''}">
             </div>
             <div class="ccv-input-group">
-                <label class="ccv-input-label">Icon</label>
+                <label class="ccv-input-label">${t('Icon')}</label>
                 <input type="hidden" id="ccv-url-icon" value="${selectedIcon}">
                 <div class="ccv-picker-toggle" id="ccv-url-icon-toggle">
                     <div class="ccv-picker-preview">
@@ -1223,7 +1258,7 @@ const CCVToolbar = (() => {
                 </div>
             </div>
             <div class="ccv-input-group">
-                <label class="ccv-input-label">Color</label>
+                <label class="ccv-input-label">${t('Color')}</label>
                 <input type="hidden" id="ccv-url-color" value="${selectedColor}">
                 <div class="ccv-color-picker" id="ccv-url-color-picker">
                     ${itemColors.map(c => `
@@ -1232,8 +1267,8 @@ const CCVToolbar = (() => {
                         </button>
                     `).join('')}
                     <div class="ccv-color-custom-wrapper">
-                        <input type="color" class="ccv-color-custom-input" id="ccv-url-color-custom" value="${selectedColor && selectedColor.startsWith('#') ? selectedColor : '#6366f1'}" data-tooltip="Custom color">
-                        <button type="button" class="ccv-color-option ccv-color-custom-btn ${selectedColor && selectedColor.startsWith('#') ? 'active' : ''}" data-color="custom" data-tooltip="Custom" style="${selectedColor && selectedColor.startsWith('#') ? `--item-color: ${selectedColor}` : ''}">
+                        <input type="color" class="ccv-color-custom-input" id="ccv-url-color-custom" value="${selectedColor && selectedColor.startsWith('#') ? selectedColor : '#6366f1'}" data-tooltip="${t('Custom color')}">
+                        <button type="button" class="ccv-color-option ccv-color-custom-btn ${selectedColor && selectedColor.startsWith('#') ? 'active' : ''}" data-color="custom" data-tooltip="${t('Custom color')}" style="${selectedColor && selectedColor.startsWith('#') ? `--item-color: ${selectedColor}` : ''}">
                             ${icons.palette}
                         </button>
                     </div>
@@ -1242,12 +1277,12 @@ const CCVToolbar = (() => {
             <div class="ccv-input-group">
                 <label class="ccv-checkbox-label">
                     <input type="checkbox" id="ccv-url-compact" ${urlItem?.showInCompact ? 'checked' : ''}>
-                    <span>Show in compact view</span>
+                    <span>${t('Show in compact view')}</span>
                 </label>
             </div>
         `;
 
-        const modal = createModal(isEdit ? 'Edit URL' : 'Add URL', content, () => {
+        const modal = createModal(isEdit ? t('Edit URL') : t('Add URL'), content, () => {
             const name = document.getElementById('ccv-url-name').value.trim();
             const url = document.getElementById('ccv-url-path').value.trim();
             const icon = document.getElementById('ccv-url-icon').value;
@@ -1255,7 +1290,7 @@ const CCVToolbar = (() => {
             const showInCompact = document.getElementById('ccv-url-compact').checked;
 
             if (!name || !url) {
-                showToast('Please fill in all fields');
+                showToast(t('Please fill in all fields'));
                 return false;
             }
 
@@ -1413,12 +1448,12 @@ const CCVToolbar = (() => {
                 if (!domain) return;
                 
                 showContextMenu(e, [
-                    { icon: icons.open, label: 'Open', action: () => navigateUrl('/', domain.url) },
-                    { icon: icons.externalLink, label: 'Open in new tab', action: () => openUrlNewTab('/', domain.url) },
-                    { icon: icons.copy, label: 'Copy URL', action: () => copyToClipboard(domain.url) },
+                    { icon: icons.open, label: t('Open'), action: () => navigateUrl('/', domain.url) },
+                    { icon: icons.externalLink, label: t('Open in new tab'), action: () => openUrlNewTab('/', domain.url) },
+                    { icon: icons.copy, label: t('Copy URL'), action: () => copyToClipboard(domain.url) },
                     { separator: true },
-                    { icon: icons.edit, label: 'Edit', action: () => showDomainModal(domain) },
-                    { icon: icons.delete, label: 'Delete', danger: true, action: () => {
+                    { icon: icons.edit, label: t('Edit'), action: () => showDomainModal(domain) },
+                    { icon: icons.delete, label: t('Delete'), danger: true, action: () => {
                         showDeleteConfirmation('Domain', domain.name, () => {
                             config.domains = config.domains.filter(d => d.id !== domain.id);
                             saveConfig();
@@ -1463,12 +1498,12 @@ const CCVToolbar = (() => {
                 if (!url) return;
                 
                 showContextMenu(e, [
-                    { icon: icons.open, label: 'Open', action: () => navigateUrl(url.url) },
-                    { icon: icons.externalLink, label: 'Open in new tab', action: () => openUrlNewTab(url.url) },
-                    { icon: icons.copy, label: 'Copy URL', action: () => copyToClipboard(url.url) },
+                    { icon: icons.open, label: t('Open'), action: () => navigateUrl(url.url) },
+                    { icon: icons.externalLink, label: t('Open in new tab'), action: () => openUrlNewTab(url.url) },
+                    { icon: icons.copy, label: t('Copy URL'), action: () => copyToClipboard(url.url) },
                     { separator: true },
-                    { icon: icons.edit, label: 'Edit', action: () => showUrlModal(url) },
-                    { icon: icons.delete, label: 'Delete', danger: true, action: () => {
+                    { icon: icons.edit, label: t('Edit'), action: () => showUrlModal(url) },
+                    { icon: icons.delete, label: t('Delete'), danger: true, action: () => {
                         showDeleteConfirmation('URL', url.name, () => {
                             config.urls = config.urls.filter(u => u.id !== url.id);
                             saveConfig();
@@ -1527,16 +1562,16 @@ const CCVToolbar = (() => {
                     if (!customColor) return;
                     
                     showContextMenu(e, [
-                        { icon: icons.check, label: 'Apply', action: () => {
+                        { icon: icons.check, label: t('Apply'), action: () => {
                             config.color = customColor.id;
                             applyTheme();
                             saveConfig();
                             renderThemeGrid();
                         }},
                         { separator: true },
-                        { icon: icons.edit, label: 'Edit', action: () => showCustomColorModal(customColor) },
-                        { icon: icons.delete, label: 'Delete', danger: true, action: () => {
-                            showDeleteConfirmation('Color', customColor.name, () => {
+                        { icon: icons.edit, label: t('Edit'), action: () => showCustomColorModal(customColor) },
+                        { icon: icons.delete, label: t('Delete'), danger: true, action: () => {
+                            showDeleteConfirmation(t('Color'), customColor.name, () => {
                                 config.customColors = config.customColors.filter(c => c.id !== customColor.id);
                                 if (config.color === customColor.id) {
                                     config.color = 'default';
@@ -1544,7 +1579,7 @@ const CCVToolbar = (() => {
                                 }
                                 saveConfig();
                                 renderThemeGrid();
-                                showToast('Color deleted');
+                                showToast(t('Color deleted'));
                             });
                         }}
                     ]);
@@ -1771,15 +1806,15 @@ const CCVToolbar = (() => {
                 if (!theme) return;
                 
                 showContextMenu(e, [
-                    { icon: icons.palette, label: 'Apply theme', action: () => switchWebshopTheme(theme.id) },
+                    { icon: icons.palette, label: t('Apply theme'), action: () => switchWebshopTheme(theme.id) },
                     { separator: true },
-                    { icon: icons.edit, label: 'Edit', action: () => showWebshopThemeModal(theme) },
-                    { icon: icons.delete, label: 'Delete', danger: true, action: () => {
-                        showDeleteConfirmation('Theme', theme.name, () => {
+                    { icon: icons.edit, label: t('Edit'), action: () => showWebshopThemeModal(theme) },
+                    { icon: icons.delete, label: t('Delete'), danger: true, action: () => {
+                        showDeleteConfirmation(t('Theme'), theme.name, () => {
                             config.webshopThemes = config.webshopThemes.filter(t => t.id !== theme.id);
                             saveConfig();
                             renderWebshopThemes();
-                            showToast('Theme deleted');
+                            showToast(t('Theme deleted'));
                         });
                     }}
                 ]);
@@ -1911,6 +1946,15 @@ const CCVToolbar = (() => {
                 config.initialView = themeOption.dataset.initialView;
                 saveConfig();
                 elements.toolbar.querySelectorAll('[data-initial-view]').forEach(o => o.classList.toggle('active', o.dataset.initialView === themeOption.dataset.initialView));
+                return;
+            }
+            if (themeOption.dataset.language) {
+                const newLang = themeOption.dataset.language;
+                if (newLang !== config.language) {
+                    config.language = newLang;
+                    saveConfig();
+                    loadTranslations(newLang).then(() => render());
+                }
                 return;
             }
         }
@@ -2089,8 +2133,9 @@ const CCVToolbar = (() => {
         requestAnimationFrame(constrainPosition);
     };
 
-    const init = () => {
+    const init = async () => {
         loadConfig();
+        await loadTranslations(config.language);
 
         const shouldBeHidden = config.initialView === 'hidden' || !config.visible;
         config.expanded = config.initialView !== 'compact';
