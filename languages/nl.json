@@ -38,9 +38,7 @@
     "Language": "Taal",
 
     "Edit Domain": "Domein Bewerken",
-    "Add Domain": "Domein Toevoegen",
     "Edit URL": "URL Bewerken",
-    "Add URL": "URL Toevoegen",
     "Name": "Naam",
     "URL": "URL",
     "Path": "Pad",
@@ -102,10 +100,15 @@
     "Edit Color": "Kleur Bewerken",
     "Add Color": "Kleur Toevoegen",
     "Edit Theme": "Thema Bewerken",
-    "Add Theme": "Thema Toevoegen",
     "Theme ID": "Thema ID",
     "Update available": "Update beschikbaar",
     "Copy JS": "Kopieer JS",
-    "Copy CSS": "Kopieer CSS"
+    "Copy CSS": "Kopieer CSS",
+    "Copied!": "Gekopieerd!",
+    "Update Error": "Update Fout",
+    "Cookie preferences cleared": "Cookie voorkeuren gewist",
+    "the page to see the modal again.": "de pagina om de modal opnieuw te zien.",
+    "Switched to {0} theme": "Gewisseld naar {0} thema",
+    "Failed to switch theme ({0})": "Thema wisselen mislukt ({0})"
 }
 

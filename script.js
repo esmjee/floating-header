@@ -6,7 +6,13 @@ const CCVToolbar = (() => {
     
     let translations = {};
     
-    const t = (key) => translations[key] || key;
+    const t = (key, ...args) => {
+        let text = translations[key] || key;
+        args.forEach((arg, i) => {
+            text = text.replace(new RegExp(`\\{${i}\\}`, 'g'), arg);
+        });
+        return text;
+    };
     
     const loadTranslations = async (lang) => {
         if (lang === 'en') {
@@ -571,9 +577,9 @@ const CCVToolbar = (() => {
             if (comparison > 0) {
                 showUpdateModal(remoteVersion, remoteScript, remoteCss);
             } else if (comparison === 0) {
-                showToast('You have the latest version! (v' + VERSION + ')');
+                showToast(t('You have the latest version!') + ' (v' + VERSION + ')');
             } else {
-                showToast('Your version is newer than remote (v' + VERSION + ' > v' + remoteVersion + ')');
+                showToast(t('Your version is newer than remote') + ' (v' + VERSION + ' > v' + remoteVersion + ')');
             }
         } catch (error) {
             showUpdateModal(null, null, null, 'Failed to check for updates: ' + error.message);
@@ -590,7 +596,7 @@ const CCVToolbar = (() => {
                     <p style="margin: 0; color: var(--ccv-text);">${errorMessage}</p>
                 </div>
             `;
-            createModal('Update Error', content, null);
+            createModal(t('Update Error'), content, null);
             return;
         }
 
@@ -600,30 +606,23 @@ const CCVToolbar = (() => {
         content = `
             <div style="text-align: center; padding: 10px 0;">
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <p style="margin: 0 0 8px 0; color: var(--ccv-text); font-weight: 600;">New version available!</p>
+                    <p style="margin: 0 0 8px 0; color: var(--ccv-text); font-weight: 600;">${t('Update available')}!</p>
                     <p style="margin: 0 0 16px 0; color: var(--ccv-text-muted); font-size: 12px;">v${VERSION} → v${newVersion}</p>
-                    <p style="margin: 0 0 12px 0; color: var(--ccv-text); font-size: 11px;">Copy the files below and paste them in the extension. <a href="chrome-extension://nbhcbdghjpllgmfilhnhkllmkecfmpld/src/options.html" target="_blank" 
-                    style="display: inline-flex; align-items: center; gap: 4px; margin-bottom: 16px; color: var(--ccv-accent); font-size: 11px; text-decoration: none; cursor: pointer;">
-                        <span style="${iconStyle}">${icons.externalLink}</span>
-                        <span>Open Extension Settings</span>
-                    </a></p>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     <button class="ccv-btn ccv-btn-primary ccv-copy-js" style="width: 100%; justify-content: center;">
-                        <span style="${iconStyle}">${icons.code}</span><span style="margin-left: 6px;">Copy JavaScript</span>
+                        <span style="${iconStyle}">${icons.code}</span><span style="margin-left: 6px;">${t('Copy JS')}</span>
                     </button>
                     ${hasCss ? `
                     <button class="ccv-btn ccv-copy-css" style="width: 100%; justify-content: center;">
-                        <span style="${iconStyle}">${icons.palette}</span><span style="margin-left: 6px;">Copy CSS</span>
+                        <span style="${iconStyle}">${icons.palette}</span><span style="margin-left: 6px;">${t('Copy CSS')}</span>
                     </button>
-                    ` : `
-                    <p style="margin: 0; color: var(--ccv-text-muted); font-size: 10px;">No CSS URL configured</p>
-                    `}
+                    ` : ''}
                 </div>
             </div>
         `;
 
-        const modal = createModal('Update Available', content, null);
+        const modal = createModal(t('Update available'), content, null);
         
         const saveBtn = modal.querySelector('[data-action="save-modal"]');
         if (saveBtn) saveBtn.style.display = 'none';
@@ -635,9 +634,9 @@ const CCVToolbar = (() => {
             copyJsBtn.onclick = () => {
                 navigator.clipboard.writeText(newScript).then(() => {
                     showToast(t('JavaScript copied! Paste it in your extension.'));
-                    copyJsBtn.innerHTML = `<span style="${smallIcon}">${icons.check}</span><span style="margin-left: 6px;">Copied!</span>`;
+                    copyJsBtn.innerHTML = `<span style="${smallIcon}">${icons.check}</span><span style="margin-left: 6px;">${t('Copied!')}</span>`;
                     setTimeout(() => {
-                        copyJsBtn.innerHTML = `<span style="${smallIcon}">${icons.code}</span><span style="margin-left: 6px;">Copy JavaScript</span>`;
+                        copyJsBtn.innerHTML = `<span style="${smallIcon}">${icons.code}</span><span style="margin-left: 6px;">${t('Copy JS')}</span>`;
                     }, 2000);
                 });
             };
@@ -647,10 +646,10 @@ const CCVToolbar = (() => {
         if (copyCssBtn && hasCss) {
             copyCssBtn.onclick = () => {
                 navigator.clipboard.writeText(newCss).then(() => {
-                    showToast('CSS copied! Paste it in your extension.');
-                    copyCssBtn.innerHTML = `<span style="${smallIcon}">${icons.check}</span><span style="margin-left: 6px;">Copied!</span>`;
+                    showToast(t('CSS copied! Paste it in your extension.'));
+                    copyCssBtn.innerHTML = `<span style="${smallIcon}">${icons.check}</span><span style="margin-left: 6px;">${t('Copied!')}</span>`;
                     setTimeout(() => {
-                        copyCssBtn.innerHTML = `<span style="${smallIcon}">${icons.palette}</span><span style="margin-left: 6px;">Copy CSS</span>`;
+                        copyCssBtn.innerHTML = `<span style="${smallIcon}">${icons.palette}</span><span style="margin-left: 6px;">${t('Copy CSS')}</span>`;
                     }, 2000);
                 });
             };
@@ -674,7 +673,7 @@ const CCVToolbar = (() => {
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`;
         });
-        showToast('Cookie preferences cleared - <a href="javascript:window.location.reload()">refresh</a> the page to see the modal again.', true);
+        showToast(`${t('Cookie preferences cleared')} - <a href="javascript:window.location.reload()">${t('refresh')}</a> ${t('the page to see the modal again.')}`, true);
     };
 
     let themeSwitchingInProgress = false;
@@ -721,7 +720,7 @@ const CCVToolbar = (() => {
                 if (clickedBtn) clickedBtn.classList.remove('loading');
             }
             const loginUrl = `${window.location.origin}/onderhoud/Login.php`;
-            showToast(`You are required to login <a href="${loginUrl}" target="_blank">here</a> to use this feature.`, true);
+            showToast(`${t('You are required to login')} <a href="${loginUrl}" target="_blank">${t('here')}</a> ${t('to use this feature.')}`, true);
             return;
         }
         
@@ -740,12 +739,12 @@ const CCVToolbar = (() => {
             });
 
             if (response.ok) {
-                showToast(`Switched to ${theme.name} theme`);
+                showToast(t('Switched to {0} theme', theme.name));
                 setTimeout(() => {
                     window.location.reload();
                 }, 150);
             } else {
-                showToast(`Failed to switch theme (${response.status})`);
+                showToast(t('Failed to switch theme ({0})', response.status));
                 themeSwitchingInProgress = false;
                 if (container) {
                     container.classList.remove('disabled');
@@ -753,7 +752,7 @@ const CCVToolbar = (() => {
                 }
             }
         } catch (error) {
-            showToast('Failed to switch theme - check console');
+            showToast(t('Failed to switch theme - check console'));
             console.error('Theme switch error:', error);
             themeSwitchingInProgress = false;
             if (container) {
@@ -862,11 +861,11 @@ const CCVToolbar = (() => {
                         <label class="ccv-settings-label">${t('Language')}</label>
                         <div class="ccv-theme-grid" style="grid-template-columns: repeat(2, 1fr);">
                             <div class="ccv-theme-option ${config.language === 'en' ? 'active' : ''}" data-language="en">
-                                <div class="preview" style="background: var(--ccv-surface-hover); font-size: 16px; font-weight: 600;">EN</div>
+                                <div class="preview" style="background: var(--ccv-surface-hover); font-size: 22px;">🇬🇧</div>
                                 <span class="name">English</span>
                             </div>
                             <div class="ccv-theme-option ${config.language === 'nl' ? 'active' : ''}" data-language="nl">
-                                <div class="preview" style="background: var(--ccv-surface-hover); font-size: 16px; font-weight: 600;">NL</div>
+                                <div class="preview" style="background: var(--ccv-surface-hover); font-size: 22px;">🇳🇱</div>
                                 <span class="name">Nederlands</span>
                             </div>
                         </div>
@@ -1015,7 +1014,7 @@ const CCVToolbar = (() => {
                                 config.domains = config.domains.filter(d => d.id !== domain.id);
                                 saveConfig();
                                 render();
-                                showToast('Domain deleted');
+                                showToast(t('Domain deleted'));
                             });
                         }}
                     ]);
@@ -1035,7 +1034,7 @@ const CCVToolbar = (() => {
                                 config.urls = config.urls.filter(u => u.id !== url.id);
                                 saveConfig();
                                 render();
-                                showToast('URL deleted');
+                                showToast(t('URL deleted'));
                             });
                         }}
                     ]);
@@ -1379,7 +1378,7 @@ const CCVToolbar = (() => {
         a.download = 'ccv-toolbar-config.json';
         a.click();
         URL.revokeObjectURL(url);
-        showToast('Configuration exported');
+        showToast(t('Configuration exported'));
     };
 
     const importConfig = () => {
@@ -1407,9 +1406,9 @@ const CCVToolbar = (() => {
                     applyTheme();
                     saveConfig();
                     render();
-                    showToast('Configuration imported');
+                    showToast(t('Configuration imported'));
                 } catch (err) {
-                    showToast('Invalid configuration file');
+                    showToast(t('Invalid configuration file'));
                 }
             };
             reader.readAsText(file);
@@ -1458,7 +1457,7 @@ const CCVToolbar = (() => {
                             config.domains = config.domains.filter(d => d.id !== domain.id);
                             saveConfig();
                             renderDomainsList();
-                            showToast('Domain deleted');
+                            showToast(t('Domain deleted'));
                         });
                     }}
                 ]);
@@ -1508,7 +1507,7 @@ const CCVToolbar = (() => {
                             config.urls = config.urls.filter(u => u.id !== url.id);
                             saveConfig();
                             renderUrlsList();
-                            showToast('URL deleted');
+                            showToast(t('URL deleted'));
                         });
                     }}
                 ]);
@@ -1602,11 +1601,11 @@ const CCVToolbar = (() => {
         
         const content = `
             <div class="ccv-input-group">
-                <label class="ccv-input-label">Name</label>
+                <label class="ccv-input-label">${t('Name')}</label>
                 <input type="text" class="ccv-input" id="ccv-custom-color-name" value="${customColor?.name || ''}" placeholder="My Color">
             </div>
             <div class="ccv-input-group">
-                <label class="ccv-input-label">Color</label>
+                <label class="ccv-input-label">${t('Color')}</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <input type="color" id="ccv-custom-color-value" value="${customColor?.color || '#6366f1'}" style="width: 50px; height: 36px; border: none; border-radius: 6px; cursor: pointer;">
                     <input type="text" class="ccv-input" id="ccv-custom-color-hex" value="${customColor?.color || '#6366f1'}" placeholder="#6366f1" style="flex: 1; font-family: monospace;">
@@ -1614,12 +1613,12 @@ const CCVToolbar = (() => {
             </div>
         `;
 
-        const modal = createModal(isEdit ? 'Edit Custom Color' : 'Add Custom Color', content, () => {
+        const modal = createModal(isEdit ? t('Edit Color') : t('Add Color'), content, () => {
             const name = document.getElementById('ccv-custom-color-name').value.trim();
             const color = document.getElementById('ccv-custom-color-value').value;
             
             if (!name) {
-                showToast('Please enter a name');
+                showToast(t('Please enter a name'));
                 return false;
             }
 
@@ -1630,11 +1629,11 @@ const CCVToolbar = (() => {
                 if (idx !== -1) {
                     config.customColors[idx] = { ...config.customColors[idx], name, color };
                 }
-                showToast('Color updated');
+                showToast(t('Color updated'));
             } else {
                 const id = 'custom_' + generateId();
                 config.customColors.push({ id, name, color });
-                showToast('Color added');
+                showToast(t('Color added'));
             }
             
             saveConfig();
@@ -1653,7 +1652,7 @@ const CCVToolbar = (() => {
             }
             saveConfig();
             renderThemeGrid();
-            showToast('Color deleted');
+            showToast(t('Color deleted'));
         } : null);
 
         const colorPicker = modal.querySelector('#ccv-custom-color-value');
@@ -1675,27 +1674,26 @@ const CCVToolbar = (() => {
         
         const content = `
             <div class="ccv-input-group">
-                <label class="ccv-input-label">Name</label>
+                <label class="ccv-input-label">${t('Name')}</label>
                 <input type="text" class="ccv-input" id="ccv-theme-name" placeholder="e.g. Oliver" value="${theme?.name || ''}">
             </div>
             <div class="ccv-input-group">
-                <label class="ccv-input-label">ID (case-sensitive)</label>
+                <label class="ccv-input-label">${t('Theme ID')} (case-sensitive)</label>
                 <input type="text" class="ccv-input" id="ccv-theme-id" placeholder="e.g. oliver" value="${theme?.id || ''}" ${isEdit ? 'disabled' : ''}>
-                <p class="ccv-hint">The theme ID is used in the request to change the theme.</p>
             </div>
             <div class="ccv-input-group">
-                <label class="ccv-input-label">Color</label>
+                <label class="ccv-input-label">${t('Color')}</label>
                 <input type="color" class="ccv-input ccv-input-color" id="ccv-theme-color" value="${theme?.color || '#6366f1'}">
             </div>
         `;
 
-        const modal = createModal(isEdit ? 'Edit Theme' : 'Add Theme', content, () => {
+        const modal = createModal(isEdit ? t('Edit Theme') : t('Add Theme'), content, () => {
             const name = document.getElementById('ccv-theme-name').value.trim();
             const id = document.getElementById('ccv-theme-id').value.trim();
             const color = document.getElementById('ccv-theme-color').value;
 
             if (!name || !id) {
-                showToast('Please fill in all fields');
+                showToast(t('Please fill in all fields'));
                 return;
             }
 
@@ -1704,14 +1702,14 @@ const CCVToolbar = (() => {
                 if (index !== -1) {
                     config.webshopThemes[index] = { ...config.webshopThemes[index], name, color };
                 }
-                showToast('Theme updated');
+                showToast(t('Theme updated'));
             } else {
                 if (config.webshopThemes.some(t => t.id === id)) {
-                    showToast('Theme ID already exists');
+                    showToast(t('Theme ID already exists'));
                     return;
                 }
                 config.webshopThemes.push({ id, name, color });
-                showToast('Theme added');
+                showToast(t('Theme added'));
             }
             
             saveConfig();
@@ -2008,7 +2006,7 @@ const CCVToolbar = (() => {
                 config.domains = config.domains.filter(d => d.id !== id);
                 saveConfig();
                 render();
-                showToast('Domain deleted');
+                showToast(t('Domain deleted'));
                 break;
             case 'copy-domain':
                 const copyDomain = config.domains.find(d => d.id === id);
@@ -2029,7 +2027,7 @@ const CCVToolbar = (() => {
                 config.urls = config.urls.filter(u => u.id !== id);
                 saveConfig();
                 render();
-                showToast('URL deleted');
+                showToast(t('URL deleted'));
                 break;
             case 'copy-url':
                 const copyUrl = config.urls.find(u => u.id === id);
@@ -2070,38 +2068,38 @@ const CCVToolbar = (() => {
 
     const showDeleteConfirmation = (itemType, itemName, onConfirm) => {
         const content = `
-            <p style="margin: 0 0 12px 0; color: var(--ccv-text);">Are you sure you want to delete "${itemName}"?</p>
-            <p style="margin: 0; color: var(--ccv-text-muted); font-size: 11px;">This action cannot be undone.</p>
+            <p style="margin: 0 0 12px 0; color: var(--ccv-text);">${t('Are you sure you want to delete')} "${itemName}"?</p>
+            <p style="margin: 0; color: var(--ccv-text-muted); font-size: 11px;">${t('This action cannot be undone.')}</p>
         `;
 
-        const modal = createModal(`Delete ${itemType}`, content, () => {
+        const modal = createModal(`${t('Delete')} ${itemType}`, content, () => {
             onConfirm();
             return true;
         });
 
         const saveBtn = modal.querySelector('[data-action="save-modal"]');
-        saveBtn.textContent = 'Delete';
+        saveBtn.textContent = t('Delete');
         saveBtn.classList.remove('primary');
         saveBtn.classList.add('danger');
     };
 
     const showResetConfirmation = () => {
         const content = `
-            <p style="margin: 0 0 12px 0; color: var(--ccv-text);">Are you sure you want to reset all settings to default?</p>
-            <p style="margin: 0; color: var(--ccv-text-muted); font-size: 11px;">This will remove all your domains, URLs, webshop themes, and preferences. This action cannot be undone.</p>
+            <p style="margin: 0 0 12px 0; color: var(--ccv-text);">${t('Are you sure you want to reset all settings to default?')}</p>
+            <p style="margin: 0; color: var(--ccv-text-muted); font-size: 11px;">${t('This will remove all your domains, URLs, webshop themes, and preferences. This action cannot be undone.')}</p>
         `;
 
-        const modal = createModal('Reset Configuration', content, () => {
+        const modal = createModal(t('Reset Configuration'), content, () => {
             localStorage.removeItem('ccv-toolbar-config');
             config = { ...defaultConfig };
             applyTheme();
             render();
-            showToast('Configuration reset to default');
+            showToast(t('Configuration reset to default'));
             return true;
         });
 
         const saveBtn = modal.querySelector('[data-action="save-modal"]');
-        saveBtn.textContent = 'Reset';
+        saveBtn.textContent = t('Reset');
         saveBtn.classList.remove('primary');
         saveBtn.classList.add('danger');
     };
@@ -2171,13 +2169,13 @@ const CCVToolbar = (() => {
                     if (statusContainer) {
                         if (!hasDefaults) {
                             statusContainer.className = 'ccv-defaults-status ccv-defaults-none';
-                            statusContainer.innerHTML = `${icons.info}<span>No defaults saved yet</span>`;
+                            statusContainer.innerHTML = `${icons.info}<span>${t('No defaults saved yet')}</span>`;
                         } else if (config.usesDefaultConfig) {
                             statusContainer.className = 'ccv-defaults-status ccv-defaults-match';
-                            statusContainer.innerHTML = `${icons.check}<span>Using synced defaults</span>`;
+                            statusContainer.innerHTML = `${icons.check}<span>${t('Using synced defaults')}</span>`;
                         } else {
                             statusContainer.className = 'ccv-defaults-status ccv-defaults-different';
-                            statusContainer.innerHTML = `${icons.alert}<span>Custom settings for this domain</span>`;
+                            statusContainer.innerHTML = `${icons.alert}<span>${t('Custom settings for this domain')}</span>`;
                         }
                     }
                     
@@ -2185,15 +2183,15 @@ const CCVToolbar = (() => {
                     if (headerIcon) {
                         if (!hasDefaults) {
                             headerIcon.className = 'ccv-config-status ccv-config-none';
-                            headerIcon.dataset.tooltip = 'No defaults saved';
+                            headerIcon.dataset.tooltip = t('No defaults saved');
                             headerIcon.innerHTML = icons.info;
                         } else if (config.usesDefaultConfig) {
                             headerIcon.className = 'ccv-config-status ccv-config-synced';
-                            headerIcon.dataset.tooltip = 'Synced with defaults';
+                            headerIcon.dataset.tooltip = t('Synced with defaults');
                             headerIcon.innerHTML = icons.check;
                         } else {
                             headerIcon.className = 'ccv-config-status ccv-config-custom';
-                            headerIcon.dataset.tooltip = 'Custom config';
+                            headerIcon.dataset.tooltip = t('Custom config');
                             headerIcon.innerHTML = icons.alert;
                         }
                     }
@@ -2212,14 +2210,14 @@ const CCVToolbar = (() => {
                         applyTheme();
                         renderThemeGrid();
                         updateDefaultsStatus();
-                        showToast('Now using default config');
+                        showToast(t('Now using default config'));
                     } else {
-                        showToast('No defaults saved yet - save defaults first');
+                        showToast(t('No defaults saved yet - save defaults first'));
                         updateDefaultsStatus();
                     }
                 } else {
                     updateDefaultsStatus();
-                    showToast('Using custom config for this domain');
+                    showToast(t('Using custom config for this domain'));
                 }
             }
         });
