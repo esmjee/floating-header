@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '1.2.1';
+    const VERSION = '1.2.2';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     
@@ -336,7 +336,7 @@ const CCVToolbar = (() => {
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
 
-    const showToast = (message, isHtml = false) => {
+    const showToast = (message, doRenderHtml = false) => {
         const existing = document.querySelector('.ccv-toast');
         if (existing) existing.remove();
         
@@ -345,7 +345,7 @@ const CCVToolbar = (() => {
         toast.setAttribute('data-mode', config.mode);
         toast.setAttribute('data-color', config.color === 'default' ? '' : config.color);
         
-        if (isHtml) {
+        if (doRenderHtml) {
             toast.innerHTML = `
                 <span class="ccv-toast-message">${message}</span>
                 <button class="ccv-toast-close">${icons.close}</button>
@@ -361,7 +361,7 @@ const CCVToolbar = (() => {
         
         requestAnimationFrame(() => toast.classList.add('show'));
         
-        if (!isHtml) {
+        if (!doRenderHtml) {
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
@@ -652,7 +652,7 @@ const CCVToolbar = (() => {
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`;
         });
-        showToast('Cookie preferences cleared - refresh to see modal');
+        showToast('Cookie preferences cleared - <a href="javascript:window.location.reload()">refresh</a> the page to see the modal again.', true);
     };
 
     let themeSwitchingInProgress = false;
@@ -682,19 +682,25 @@ const CCVToolbar = (() => {
         const theme = config.webshopThemes.find(t => t.id === themeId);
         if (!theme) return;
         
-        const isLoggedIn = await checkBackendLogin();
-        if (!isLoggedIn) {
-            const loginUrl = `${window.location.origin}/onderhoud/Login.php`;
-            showToast(`You are required to login <a href="${loginUrl}" target="_blank">here</a> to use this feature.`, true);
-            return;
-        }
-        
         themeSwitchingInProgress = true;
         const container = document.getElementById('ccv-webshop-themes');
         if (container) {
             container.classList.add('disabled');
             const clickedBtn = container.querySelector(`[data-webshop-theme="${themeId}"]`);
             if (clickedBtn) clickedBtn.classList.add('loading');
+        }
+        
+        const isLoggedIn = await checkBackendLogin();
+        if (!isLoggedIn) {
+            themeSwitchingInProgress = false;
+            if (container) {
+                container.classList.remove('disabled');
+                const clickedBtn = container.querySelector(`[data-webshop-theme="${themeId}"]`);
+                if (clickedBtn) clickedBtn.classList.remove('loading');
+            }
+            const loginUrl = `${window.location.origin}/onderhoud/Login.php`;
+            showToast(`You are required to login <a href="${loginUrl}" target="_blank">here</a> to use this feature.`, true);
+            return;
         }
         
         const endpoint = `/onderhoud/AdminItems/Settings/TemplateChoice.ajax.php`;
