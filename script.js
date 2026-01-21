@@ -543,7 +543,7 @@ const CCVToolbar = (() => {
 
     const checkForUpdates = async () => {
         if (!UPDATE_URL_JS) {
-            showUpdateModal(null, null, null, 'No update URL configured in the script.');
+            showUpdateModal(null, null, null, t('No update URL configured in the script.'));
             return;
         }
 
@@ -556,7 +556,7 @@ const CCVToolbar = (() => {
             const remoteVersion = parseVersion(remoteScript);
             
             if (!remoteVersion) {
-                showUpdateModal(null, null, null, 'Could not determine remote version. The script URL may be invalid.');
+                showUpdateModal(null, null, null, t('Could not determine remote version. The script URL may be invalid.'));
                 return;
             }
 
@@ -582,7 +582,7 @@ const CCVToolbar = (() => {
                 showToast(t('Your version is newer than remote') + ' (v' + VERSION + ' > v' + remoteVersion + ')');
             }
         } catch (error) {
-            showUpdateModal(null, null, null, 'Failed to check for updates: ' + error.message);
+            showUpdateModal(null, null, null, t('Failed to check for updates: {0}', error.message));
         }
     };
 
@@ -673,7 +673,7 @@ const CCVToolbar = (() => {
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`;
         });
-        showToast(`${t('Cookie preferences cleared')} - <a href="javascript:window.location.reload()">${t('refresh')}</a> ${t('the page to see the modal again.')}`, true);
+        showToast(t('Cookie preferences cleared - <a href="javascript:window.location.reload()">refresh</a> the page to see the modal again.'), true);
     };
 
     let themeSwitchingInProgress = false;
@@ -720,7 +720,7 @@ const CCVToolbar = (() => {
                 if (clickedBtn) clickedBtn.classList.remove('loading');
             }
             const loginUrl = `${window.location.origin}/onderhoud/Login.php`;
-            showToast(`${t('You are required to login')} <a href="${loginUrl}" target="_blank">${t('here')}</a> ${t('to use this feature.')}`, true);
+            showToast(t('You are required to login <a href="{0}" target="_blank">here</a> to use this feature.', loginUrl), true);
             return;
         }
         

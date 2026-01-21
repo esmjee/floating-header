@@ -109,6 +109,11 @@
     "Cookie preferences cleared": "Cookie voorkeuren gewist",
     "the page to see the modal again.": "de pagina om de modal opnieuw te zien.",
     "Switched to {0} theme": "Gewisseld naar {0} thema",
-    "Failed to switch theme ({0})": "Thema wisselen mislukt ({0})"
+    "Failed to switch theme ({0})": "Thema wisselen mislukt ({0})",
+    "Failed to check for updates: {0}": "Controleren op updates mislukt: {0}",
+    "Could not determine remote version. The script URL may be invalid.": "Kan de remote versie niet bepalen. De script URL is mogelijk ongeldig.",
+    "No update URL configured in the script.": "Geen update URL geconfigureerd in het script.",
+    "You are required to login <a href=\"{0}\" target=\"_blank\">here</a> to use this feature.": "Je moet inloggen <a href=\"{0}\" target=\"_blank\">hier</a> om deze functie te gebruiken.",
+    "Cookie preferences cleared - <a href=\"javascript:window.location.reload()\">refresh</a> the page to see the modal again.": "Cookie voorkeuren gewist - <a href=\"javascript:window.location.reload()\">vernieuwen</a> de pagina om de modal opnieuw te zien."
 }
 
