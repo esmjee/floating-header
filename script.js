@@ -383,17 +383,17 @@ const CCVToolbar = (() => {
                 setTimeout(() => toast.remove(), 300);
             };
         } else {
-            toast.textContent = message;
+        toast.textContent = message;
         }
         document.body.appendChild(toast);
         
         requestAnimationFrame(() => toast.classList.add('show'));
         
         if (!doRenderHtml) {
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 2000);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 2000);
         }
     };
 
@@ -673,7 +673,7 @@ const CCVToolbar = (() => {
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`;
         });
-        showToast(t('Cookie preferences cleared - <a href="javascript:window.location.reload()">refresh</a> the page to see the modal again.'), true);
+        showToast(t('Cookie preferences cleared. {0} to see the modal again.', `<a href="javascript:window.location.reload()">${t('Click here')}</a>`), true);
     };
 
     let themeSwitchingInProgress = false;
@@ -720,7 +720,7 @@ const CCVToolbar = (() => {
                 if (clickedBtn) clickedBtn.classList.remove('loading');
             }
             const loginUrl = `${window.location.origin}/onderhoud/Login.php`;
-            showToast(t('You are required to login <a href="{0}" target="_blank">here</a> to use this feature.', loginUrl), true);
+            showToast(t('Login required to use this feature. Click {0} to login.', `<a href="${loginUrl}" target="_blank">${t('here')}</a>`), true);
             return;
         }
         
