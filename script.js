@@ -1,8 +1,11 @@
 const CCVToolbar = (() => {
-    const VERSION = '1.2.4';
+    const VERSION = '2.0.0';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
+    
+    // Check if running under the auto-update loader
+    const isLoaderPresent = () => window.__CCV_LOADER_PRESENT__ === true;
     
     let translations = {};
     
@@ -19,6 +22,16 @@ const CCVToolbar = (() => {
             translations = {};
             return;
         }
+        
+        if (window.__CCV_TOOLBAR_LANGUAGES__ && window.__CCV_TOOLBAR_LANGUAGES__[lang]) {
+            try {
+                translations = JSON.parse(window.__CCV_TOOLBAR_LANGUAGES__[lang]);
+                return;
+            } catch (e) {
+                console.warn('Failed to parse cached translations:', e);
+            }
+        }
+        
         try {
             const response = await fetch(`${LANGUAGES_URL}/${lang}.json`);
             if (response.ok) {
@@ -368,7 +381,6 @@ const CCVToolbar = (() => {
             config.usesDefaultConfig = false;
             saveConfig();
             
-            // Update UI if settings panel is open
             const checkbox = document.querySelector('#ccv-uses-default-config');
             if (checkbox) checkbox.checked = false;
             
@@ -567,6 +579,14 @@ const CCVToolbar = (() => {
     };
 
     const checkForUpdates = async () => {
+        // If running under the loader, request fresh files
+        if (isLoaderPresent()) {
+            showToast(t('Checking for updates...'));
+            window.dispatchEvent(new CustomEvent('ccv-loader-fetch'));
+            return;
+        }
+        
+        // Legacy mode: manual copy/paste update
         if (!UPDATE_URL_JS) {
             showUpdateModal(null, null, null, t('No update URL configured in the script.'));
             return;
@@ -609,6 +629,40 @@ const CCVToolbar = (() => {
         } catch (error) {
             showUpdateModal(null, null, null, t('Failed to check for updates: {0}', error.message));
         }
+    };
+    
+    // Listen for loader responses - all update logic is handled here in script.js
+    const setupLoaderListeners = () => {
+        if (!isLoaderPresent()) return;
+        
+        window.addEventListener('ccv-loader-response', (e) => {
+            const { success, script, error } = e.detail;
+            
+            if (!success) {
+                showToast(t('Update failed: {0}', error || 'Unknown error'));
+                return;
+            }
+            
+            // Parse version from fetched script
+            const remoteVersion = parseVersion(script);
+            if (!remoteVersion) {
+                showToast(t('Could not determine remote version'));
+                return;
+            }
+            
+            // Compare versions - this logic is in script.js so it can be updated
+            const comparison = compareVersions(remoteVersion, VERSION);
+            
+            if (comparison > 0) {
+                // New version available - loader already cached it, just reload
+                showToast(t('Update installed! Reloading...') + ` (v${VERSION} → v${remoteVersion})`);
+                setTimeout(() => window.location.reload(), 1500);
+            } else if (comparison === 0) {
+                showToast(t('You have the latest version!') + ' (v' + VERSION + ')');
+            } else {
+                showToast(t('Your version is newer than remote') + ` (v${VERSION} > v${remoteVersion})`);
+            }
+        });
     };
 
     const showUpdateModal = (newVersion, newScript, newCss, errorMessage = null) => {
@@ -2167,6 +2221,7 @@ const CCVToolbar = (() => {
     const init = async () => {
         loadConfig();
         await loadTranslations(config.language);
+        setupLoaderListeners();
 
         const shouldBeHidden = config.initialView === 'hidden' || !config.visible;
         config.expanded = config.initialView !== 'compact';
@@ -2181,14 +2236,12 @@ const CCVToolbar = (() => {
         elements.toggleBtn.className = `ccv-toggle-btn ${shouldBeHidden ? 'visible' : ''}`;
         elements.toggleBtn.innerHTML = icons.logo;
         
-        // Set toggle button position
         if (config.togglePosition.x !== null && config.togglePosition.y !== null) {
             elements.toggleBtn.style.left = `${config.togglePosition.x}px`;
             elements.toggleBtn.style.top = `${config.togglePosition.y}px`;
             elements.toggleBtn.classList.add('has-position');
         }
         
-        // Drag functionality for toggle button
         let toggleDragging = false;
         let toggleDragOffset = { x: 0, y: 0 };
         let toggleDragMoved = false;
