@@ -4,7 +4,6 @@ const CCVToolbar = (() => {
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
     
-    // Check if running under the auto-update loader
     const isLoaderPresent = () => window.__CCV_LOADER_PRESENT__ === true;
     
     let translations = {};
@@ -579,16 +578,14 @@ const CCVToolbar = (() => {
     };
 
     const checkForUpdates = async () => {
-        // If running under the loader, request fresh files
         if (isLoaderPresent()) {
             showToast(t('Checking for updates...'));
             window.dispatchEvent(new CustomEvent('ccv-loader-fetch'));
             return;
         }
         
-        // Legacy mode: manual copy/paste update
         if (!UPDATE_URL_JS) {
-            showUpdateModal(null, null, null, t('No update URL configured in the script.'));
+            showUpdateModal(null, t('No update URL configured in the script.'));
             return;
         }
 
@@ -601,7 +598,7 @@ const CCVToolbar = (() => {
             const remoteVersion = parseVersion(remoteScript);
             
             if (!remoteVersion) {
-                showUpdateModal(null, null, null, t('Could not determine remote version. The script URL may be invalid.'));
+                showUpdateModal(null, t('Could not determine remote version. The script URL may be invalid.'));
                 return;
             }
 
@@ -620,18 +617,17 @@ const CCVToolbar = (() => {
             const comparison = compareVersions(remoteVersion, VERSION);
             
             if (comparison > 0) {
-                showUpdateModal(remoteVersion, remoteScript, remoteCss);
+                showUpdateModal(remoteVersion);
             } else if (comparison === 0) {
                 showToast(t('You have the latest version!') + ' (v' + VERSION + ')');
             } else {
                 showToast(t('Your version is newer than remote') + ' (v' + VERSION + ' > v' + remoteVersion + ')');
             }
         } catch (error) {
-            showUpdateModal(null, null, null, t('Failed to check for updates: {0}', error.message));
+            showUpdateModal(null, t('Failed to check for updates: {0}', error.message));
         }
     };
     
-    // Listen for loader responses - all update logic is handled here in script.js
     const setupLoaderListeners = () => {
         if (!isLoaderPresent()) return;
         
@@ -643,18 +639,15 @@ const CCVToolbar = (() => {
                 return;
             }
             
-            // Parse version from fetched script
             const remoteVersion = parseVersion(script);
             if (!remoteVersion) {
                 showToast(t('Could not determine remote version'));
                 return;
             }
             
-            // Compare versions - this logic is in script.js so it can be updated
             const comparison = compareVersions(remoteVersion, VERSION);
             
             if (comparison > 0) {
-                // New version available - loader already cached it, just reload
                 showToast(t('Update installed! Reloading...') + ` (v${VERSION} → v${remoteVersion})`);
                 setTimeout(() => window.location.reload(), 1500);
             } else if (comparison === 0) {
@@ -665,7 +658,7 @@ const CCVToolbar = (() => {
         });
     };
 
-    const showUpdateModal = (newVersion, newScript, newCss, errorMessage = null) => {
+    const showUpdateModal = (newVersion, errorMessage = null) => {
         let content;
         
         if (errorMessage) {
@@ -679,60 +672,24 @@ const CCVToolbar = (() => {
             return;
         }
 
-        const hasCss = newCss && newCss.trim().length > 0;
-        const iconStyle = 'width: 14px; height: 14px; flex-shrink: 0;';
-
         content = `
             <div style="text-align: center; padding: 10px 0;">
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     <p style="margin: 0 0 8px 0; color: var(--ccv-text); font-weight: 600;">${t('Update available')}!</p>
                     <p style="margin: 0 0 16px 0; color: var(--ccv-text-muted); font-size: 12px;">v${VERSION} → v${newVersion}</p>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <button class="ccv-btn ccv-btn-primary ccv-copy-js" style="width: 100%; justify-content: center;">
-                        <span style="${iconStyle}">${icons.code}</span><span style="margin-left: 6px;">${t('Copy JS')}</span>
-                    </button>
-                    ${hasCss ? `
-                    <button class="ccv-btn ccv-copy-css" style="width: 100%; justify-content: center;">
-                        <span style="${iconStyle}">${icons.palette}</span><span style="margin-left: 6px;">${t('Copy CSS')}</span>
-                    </button>
-                    ` : ''}
-                </div>
+                <p style="margin: 0 0 16px 0; color: var(--ccv-text); font-size: 13px;">
+                    ${t('Install the Tampermonkey loader for automatic updates.')}
+                </p>
+                <a href="https://github.com/esmjee/floating-header#installation" target="_blank" class="ccv-btn ccv-btn-primary" style="width: 100%; justify-content: center; text-decoration: none;">
+                    ${icons.link}<span style="margin-left: 6px;">${t('View Installation Guide')}</span>
+                </a>
             </div>
         `;
 
         const modal = createModal(t('Update available'), content, null);
-        
         const saveBtn = modal.querySelector('[data-action="save-modal"]');
         if (saveBtn) saveBtn.style.display = 'none';
-        
-        const smallIcon = 'width: 14px; height: 14px; flex-shrink: 0;';
-        
-        const copyJsBtn = modal.querySelector('.ccv-copy-js');
-        if (copyJsBtn) {
-            copyJsBtn.onclick = () => {
-                navigator.clipboard.writeText(newScript).then(() => {
-                    showToast(t('JavaScript copied! Paste it in your extension.'));
-                    copyJsBtn.innerHTML = `<span style="${smallIcon}">${icons.check}</span><span style="margin-left: 6px;">${t('Copied!')}</span>`;
-                    setTimeout(() => {
-                        copyJsBtn.innerHTML = `<span style="${smallIcon}">${icons.code}</span><span style="margin-left: 6px;">${t('Copy JS')}</span>`;
-                    }, 2000);
-                });
-            };
-        }
-        
-        const copyCssBtn = modal.querySelector('.ccv-copy-css');
-        if (copyCssBtn && hasCss) {
-            copyCssBtn.onclick = () => {
-                navigator.clipboard.writeText(newCss).then(() => {
-                    showToast(t('CSS copied! Paste it in your extension.'));
-                    copyCssBtn.innerHTML = `<span style="${smallIcon}">${icons.check}</span><span style="margin-left: 6px;">${t('Copied!')}</span>`;
-                    setTimeout(() => {
-                        copyCssBtn.innerHTML = `<span style="${smallIcon}">${icons.palette}</span><span style="margin-left: 6px;">${t('Copy CSS')}</span>`;
-                    }, 2000);
-                });
-            };
-        }
     };
 
     const navigateUrl = (url, domain = null) => {

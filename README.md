@@ -17,33 +17,33 @@ A customizable floating toolbar for CCV webshop developers to quickly navigate b
 
 ## Installation
 
-### Recommended: Tampermonkey (Auto-Updates)
+Both methods support **automatic updates** - click "Check for Updates" in the toolbar to get the latest version.
 
-This method provides **automatic updates** - the script fetches and caches the latest version automatically.
+### Option 1: Tampermonkey
+
+Best for users who work across multiple CCV domains (cache is shared across all sites).
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) browser extension
-2. Click [here to install the loader script](https://raw.githubusercontent.com/esmjee/floating-header/main/loader.user.js) (or create a new script in Tampermonkey and paste the contents of `loader.user.js`)
-3. Done! The loader will automatically fetch and cache the latest `script.js` and `style.css`
+2. Click [here to install the loader](https://raw.githubusercontent.com/esmjee/floating-header/main/loader.user.js) (or create a new script and paste `loader.user.js`)
+3. Done!
 
-#### How Auto-Updates Work
+### Option 2: User JavaScript and CSS
 
-- **First run**: The loader fetches `script.js`, `style.css`, and language files from GitHub and caches them
-- **Subsequent visits**: The cached version is used instantly (no network requests)
-- **Manual update**: Click "Check for Updates" in the toolbar Settings tab
-- **Cross-site consistency**: The same cached version is used across all CCV websites in your browser
+Best for users who primarily work on one domain.
 
-### Alternative: Manual Installation (Legacy)
-
-For users who prefer manual control or cannot use Tampermonkey:
-
-1. Install the [User JavaScript and CSS](https://chrome.google.com/webstore/detail/user-javascript-and-css/nbhcbdghjpllgmfilhnhkllmkecfmpld) extension
+1. Install [User JavaScript and CSS](https://chrome.google.com/webstore/detail/user-javascript-and-css/nbhcbdghjpllgmfilhnhkllmkecfmpld) extension
 2. Go to your CCV webshop
 3. Click the extension icon → "Add new"
-4. Copy the contents of `script.js` into the JavaScript section
-5. Copy the contents of `style.css` into the CSS section
+4. Copy the contents of `loader.js` into the JavaScript section
+5. Leave the CSS section empty (CSS is loaded automatically)
 6. Save and enjoy
 
-> **Note**: With manual installation, you'll need to copy/paste new versions when updates are available.
+### How Auto-Updates Work
+
+- **First run**: The loader fetches `script.js`, `style.css`, and language files from GitHub
+- **Subsequent visits**: Cached version loads instantly
+- **Manual update**: Click "Check for Updates" in Settings → automatically downloads and applies updates
+- **Tampermonkey bonus**: Same cached version across all CCV websites
 
 ## Usage
 
@@ -133,16 +133,17 @@ Save your preferred layout settings to apply automatically on new webshops:
 
 | File | Purpose |
 |------|---------|
-| `loader.user.js` | **Minimal, stable** - Only fetches, caches, and injects files. Do not modify! |
-| `script.js` | Main toolbar + all update logic (version comparison, UI, reload decision) |
+| `loader.user.js` | Tampermonkey loader - uses GM_* APIs for cross-site caching |
+| `loader.js` | Universal loader - uses localStorage, works with any extension |
+| `script.js` | Main toolbar + all update logic (version comparison, UI, reload) |
 | `style.css` | Toolbar styles (fetched by loader) |
 | `languages/*.json` | Translation files (fetched by loader) |
 | `index.html` | Local development/testing only |
 
 ### Design Principles
 
-**The loader is intentionally minimal and should never need updates:**
-- It only handles `GM_*` APIs that require Tampermonkey (fetch, cache, inject)
+**Loaders are minimal and should never need updates:**
+- They only handle fetching, caching, and injecting files
 - All update logic, version comparison, and UI feedback is in `script.js`
 - When you push updates to `script.js`, users get the new logic automatically
 
@@ -155,11 +156,12 @@ Save your preferred layout settings to apply automatically on new webshops:
 
 ### Caching Strategy
 
-The loader uses Tampermonkey's `GM_setValue`/`GM_getValue` for persistent storage:
-- Cached data is stored per-script (not per-domain)
-- All CCV websites share the same cached version
-- Cache includes: script code, CSS, and language files
-- Updates only occur when explicitly requested by the user
+| Loader | Storage | Scope |
+|--------|---------|-------|
+| `loader.user.js` | Tampermonkey's `GM_setValue` | Shared across all CCV domains |
+| `loader.js` | `localStorage` | Per-domain (each site caches separately) |
+
+Both loaders cache: script code, CSS, and language files. Updates only occur when explicitly requested.
 
 ## Development
 

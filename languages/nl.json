@@ -110,6 +110,11 @@
     "Login required to use this feature. Click {0} to login.": "Inloggen vereist om deze functie te gebruiken. Klik {0} om in te loggen.",
     "here": "hier",
     "Cookie preferences cleared. {0} to see the modal again.": "Cookie voorkeuren gewist. {0} om de modal opnieuw te zien.",
-    "Click here": "Klik hier"
+    "Click here": "Klik hier",
+    "Install the Tampermonkey loader for automatic updates.": "Installeer de Tampermonkey loader voor automatische updates.",
+    "View Installation Guide": "Bekijk Installatiehandleiding",
+    "Update installed! Reloading...": "Update geïnstalleerd! Herladen...",
+    "Update failed: {0}": "Update mislukt: {0}",
+    "Could not determine remote version": "Kan de remote versie niet bepalen"
 }
 
