@@ -1708,12 +1708,12 @@
     border: 1px solid var(--ccv-border);
     border-radius: 50%;
     color: var(--ccv-accent);
-    cursor: pointer;
+    cursor: grab;
     box-shadow: var(--ccv-shadow);
     display: none;
     align-items: center;
     justify-content: center;
-    transition: all var(--ccv-transition);
+    transition: transform var(--ccv-transition), border-color var(--ccv-transition), box-shadow var(--ccv-transition);
     z-index: 999998;
     font-family: 'Inter', sans-serif;
 
@@ -1728,9 +1728,23 @@
         transform: scale(1.05);
         border-color: var(--ccv-accent);
     }
+    
+    &:active {
+        cursor: grabbing;
+    }
 
     &.visible {
         display: flex;
+    }
+    
+    &.has-position {
+        bottom: auto;
+        right: auto;
+    }
+    
+    &.dragging {
+        transition: none;
+        cursor: grabbing;
     }
 }
 

@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '1.2.3';
+    const VERSION = '1.2.4';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -34,6 +34,7 @@ const CCVToolbar = (() => {
         mode: 'light',
         color: 'default',
         position: { x: 20, y: 20 },
+        togglePosition: { x: null, y: null },
         visible: true,
         expanded: true,
         initialView: 'compact',
@@ -360,6 +361,30 @@ const CCVToolbar = (() => {
 
     const saveConfig = () => {
         localStorage.setItem('ccv-toolbar-config', JSON.stringify(config));
+    };
+
+    const detachFromDefaults = () => {
+        if (config.usesDefaultConfig) {
+            config.usesDefaultConfig = false;
+            saveConfig();
+            
+            // Update UI if settings panel is open
+            const checkbox = document.querySelector('#ccv-uses-default-config');
+            if (checkbox) checkbox.checked = false;
+            
+            const statusContainer = document.querySelector('.ccv-defaults-card .ccv-defaults-status');
+            if (statusContainer) {
+                statusContainer.className = 'ccv-defaults-status ccv-defaults-different';
+                statusContainer.innerHTML = `${icons.alert}<span>${t('Custom settings for this domain')}</span>`;
+            }
+            
+            const headerIcon = document.querySelector('.ccv-config-status');
+            if (headerIcon) {
+                headerIcon.className = 'ccv-config-status ccv-config-custom';
+                headerIcon.dataset.tooltip = t('Custom config');
+                headerIcon.innerHTML = icons.alert;
+            }
+        }
     };
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -853,7 +878,7 @@ const CCVToolbar = (() => {
                             </div>
                             <div class="ccv-theme-option ${config.initialView === 'compact' ? 'active' : ''}" data-initial-view="compact">
                                 <div class="preview" style="background: var(--ccv-accent);">${icons.collapse}</div>
-                                <span class="name">${t('Compact')}</span>
+                                <span class="name">${t('Minimized')}</span>
                             </div>
                         </div>
                     </div>
@@ -1563,6 +1588,7 @@ const CCVToolbar = (() => {
                     showContextMenu(e, [
                         { icon: icons.check, label: t('Apply'), action: () => {
                             config.color = customColor.id;
+                            detachFromDefaults();
                             applyTheme();
                             saveConfig();
                             renderThemeGrid();
@@ -1576,6 +1602,7 @@ const CCVToolbar = (() => {
                                     config.color = 'default';
                                     applyTheme();
                                 }
+                                detachFromDefaults();
                                 saveConfig();
                                 renderThemeGrid();
                                 showToast(t('Color deleted'));
@@ -1636,6 +1663,7 @@ const CCVToolbar = (() => {
                 showToast(t('Color added'));
             }
             
+            detachFromDefaults();
             saveConfig();
             renderThemeGrid();
             
@@ -1650,6 +1678,7 @@ const CCVToolbar = (() => {
                 config.color = 'default';
                 applyTheme();
             }
+            detachFromDefaults();
             saveConfig();
             renderThemeGrid();
             showToast(t('Color deleted'));
@@ -1857,6 +1886,7 @@ const CCVToolbar = (() => {
 
     const setMode = (modeId) => {
         config.mode = modeId;
+        detachFromDefaults();
         applyTheme();
         saveConfig();
         renderThemeGrid();
@@ -1864,6 +1894,7 @@ const CCVToolbar = (() => {
 
     const setColor = (colorId) => {
         config.color = colorId;
+        detachFromDefaults();
         applyTheme();
         saveConfig();
         renderThemeGrid();
@@ -1936,12 +1967,14 @@ const CCVToolbar = (() => {
             }
             if (themeOption.dataset.layout) {
                 config.compactLayout = themeOption.dataset.layout;
+                detachFromDefaults();
                 saveConfig();
                 elements.toolbar.querySelectorAll('.ccv-layout-option').forEach(o => o.classList.toggle('active', o.dataset.layout === themeOption.dataset.layout));
                 return;
             }
             if (themeOption.dataset.initialView) {
                 config.initialView = themeOption.dataset.initialView;
+                detachFromDefaults();
                 saveConfig();
                 elements.toolbar.querySelectorAll('[data-initial-view]').forEach(o => o.classList.toggle('active', o.dataset.initialView === themeOption.dataset.initialView));
                 return;
@@ -2147,7 +2180,59 @@ const CCVToolbar = (() => {
         elements.toggleBtn = document.createElement('button');
         elements.toggleBtn.className = `ccv-toggle-btn ${shouldBeHidden ? 'visible' : ''}`;
         elements.toggleBtn.innerHTML = icons.logo;
-        elements.toggleBtn.onclick = () => handleClick({ target: { closest: (s) => s === '[data-action]' ? { dataset: { action: 'show' } } : null } });
+        
+        // Set toggle button position
+        if (config.togglePosition.x !== null && config.togglePosition.y !== null) {
+            elements.toggleBtn.style.left = `${config.togglePosition.x}px`;
+            elements.toggleBtn.style.top = `${config.togglePosition.y}px`;
+            elements.toggleBtn.classList.add('has-position');
+        }
+        
+        // Drag functionality for toggle button
+        let toggleDragging = false;
+        let toggleDragOffset = { x: 0, y: 0 };
+        let toggleDragMoved = false;
+        
+        elements.toggleBtn.onmousedown = (e) => {
+            toggleDragging = true;
+            toggleDragMoved = false;
+            elements.toggleBtn.classList.add('dragging');
+            toggleDragOffset = {
+                x: e.clientX - (config.togglePosition.x ?? (window.innerWidth - 64)),
+                y: e.clientY - (config.togglePosition.y ?? (window.innerHeight - 64))
+            };
+            document.body.style.userSelect = 'none';
+        };
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!toggleDragging) return;
+            toggleDragMoved = true;
+            const x = Math.max(0, Math.min(window.innerWidth - 44, e.clientX - toggleDragOffset.x));
+            const y = Math.max(0, Math.min(window.innerHeight - 44, e.clientY - toggleDragOffset.y));
+            elements.toggleBtn.style.left = `${x}px`;
+            elements.toggleBtn.style.top = `${y}px`;
+            elements.toggleBtn.classList.add('has-position');
+            config.togglePosition = { x, y };
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (toggleDragging) {
+                toggleDragging = false;
+                elements.toggleBtn.classList.remove('dragging');
+                document.body.style.userSelect = '';
+                if (toggleDragMoved) {
+                    saveConfig();
+                }
+            }
+        });
+        
+        elements.toggleBtn.onclick = (e) => {
+            if (toggleDragMoved) {
+                e.preventDefault();
+                return;
+            }
+            handleClick({ target: { closest: (s) => s === '[data-action]' ? { dataset: { action: 'show' } } : null } });
+        };
 
         document.body.appendChild(elements.toolbar);
         document.body.appendChild(elements.toggleBtn);
