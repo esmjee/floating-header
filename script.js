@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.0.0';
+    const VERSION = '2.0.1';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -47,6 +47,7 @@ const CCVToolbar = (() => {
         color: 'default',
         position: { x: 20, y: 20 },
         togglePosition: { x: null, y: null },
+        toggleDragLocked: false,
         visible: true,
         expanded: true,
         initialView: 'compact',
@@ -2204,6 +2205,7 @@ const CCVToolbar = (() => {
         let toggleDragMoved = false;
         
         elements.toggleBtn.onmousedown = (e) => {
+            if (config.toggleDragLocked) return;
             toggleDragging = true;
             toggleDragMoved = false;
             elements.toggleBtn.classList.add('dragging');
@@ -2242,6 +2244,41 @@ const CCVToolbar = (() => {
                 return;
             }
             handleClick({ target: { closest: (s) => s === '[data-action]' ? { dataset: { action: 'show' } } : null } });
+        };
+        
+        elements.toggleBtn.oncontextmenu = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const hasCustomPosition = config.togglePosition.x !== null && config.togglePosition.y !== null;
+            
+            const menuItems = [
+                {
+                    icon: icons.rotate,
+                    label: t('Reset Position'),
+                    action: () => {
+                        config.togglePosition = { x: null, y: null };
+                        elements.toggleBtn.style.left = '';
+                        elements.toggleBtn.style.top = '';
+                        elements.toggleBtn.classList.remove('has-position');
+                        saveConfig();
+                        showToast(t('Position reset'));
+                    },
+                    disabled: !hasCustomPosition
+                },
+                { separator: true },
+                {
+                    icon: config.toggleDragLocked ? icons.unlock : icons.lock,
+                    label: config.toggleDragLocked ? t('Unlock Dragging') : t('Lock Dragging'),
+                    action: () => {
+                        config.toggleDragLocked = !config.toggleDragLocked;
+                        saveConfig();
+                        showToast(config.toggleDragLocked ? t('Dragging locked') : t('Dragging unlocked'));
+                    }
+                }
+            ];
+            
+            showContextMenu(e, hasCustomPosition ? menuItems : menuItems.filter(item => !item.disabled));
         };
 
         document.body.appendChild(elements.toolbar);

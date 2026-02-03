@@ -115,6 +115,12 @@
     "View Installation Guide": "Bekijk Installatiehandleiding",
     "Update installed! Reloading...": "Update geïnstalleerd! Herladen...",
     "Update failed: {0}": "Update mislukt: {0}",
-    "Could not determine remote version": "Kan de remote versie niet bepalen"
+    "Could not determine remote version": "Kan de remote versie niet bepalen",
+    "Reset Position": "Positie resetten",
+    "Position reset": "Positie gereset",
+    "Lock Dragging": "Slepen vergrendelen",
+    "Unlock Dragging": "Slepen ontgrendelen",
+    "Dragging locked": "Slepen vergrendeld",
+    "Dragging unlocked": "Slepen ontgrendeld"
 }
 
