@@ -123,6 +123,11 @@
     "Dragging unlocked": "Slepen ontgrendeld",
     "Node": "Node",
     "Shop ID": "Shop ID",
-    "Click to copy": "Klik om te kopiëren"
+    "Click to copy": "Klik om te kopiëren",
+    "Login Autofill": "Login Autofill",
+    "Autofill login fields": "Login velden automatisch invullen",
+    "Auto-fills username (subdomain) and password (demo) on /onderhoud/Login.php": "Vult automatisch gebruikersnaam (subdomein) en wachtwoord (demo) in op /onderhoud/Login.php",
+    "Login autofill enabled": "Login autofill ingeschakeld",
+    "Login autofill disabled": "Login autofill uitgeschakeld"
 }
 

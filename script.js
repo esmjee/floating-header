@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.0.3';
+    const VERSION = '2.0.4';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -55,6 +55,7 @@ const CCVToolbar = (() => {
         customColors: [],
         usesDefaultConfig: true,
         language: 'en',
+        autofillLogin: true,
         domains: [
             { id: '1', name: 'Hoofd Webshop', url: 'https://ejansen.ccvdev.nl', icon: 'globe', showInCompact: true, color: '' },
             { id: '2', name: 'Admin', url: 'https://ejansen-admin.ccvdev.nl', icon: 'users', showInCompact: false, color: '' },
@@ -374,6 +375,36 @@ const CCVToolbar = (() => {
 
     const saveConfig = () => {
         localStorage.setItem('ccv-toolbar-config', JSON.stringify(config));
+    };
+
+    const getSubdomainFromHostname = (hostname) => {
+        const hostnameParts = hostname.split(".");
+        if (hostnameParts.length < 3) {
+            return "";
+        }
+        return hostnameParts[0];
+    };
+
+    const autofillLoginFields = () => {
+        if (!config.autofillLogin) return;
+        
+        const currentPath = window.location.pathname.toLowerCase();
+        if (!currentPath.includes('/onderhoud/login.php')) return;
+
+        const usernameInput = document.querySelector("#Username");
+        const passwordInput = document.querySelector("#Password");
+
+        if (!usernameInput || !passwordInput) return;
+        
+        const usernameValueIsEmpty = usernameInput.value.trim() === "";
+        const passwordValueIsEmpty = passwordInput.value.trim() === "";
+
+        if (usernameValueIsEmpty && passwordValueIsEmpty) {
+            const hostname = window.location.hostname;
+            const subdomain = getSubdomainFromHostname(hostname);
+            usernameInput.value = subdomain;
+            passwordInput.value = "demo";
+        }
     };
 
     const detachFromDefaults = () => {
@@ -953,6 +984,21 @@ const CCVToolbar = (() => {
                         </div>
                     </div>
                     <div class="ccv-settings-group">
+                        <label class="ccv-settings-label">${t('Login Autofill')}</label>
+                        <div class="ccv-defaults-card">
+                            <div class="ccv-defaults-toggle-row">
+                                <div class="ccv-defaults-toggle-info">
+                                    <span class="ccv-defaults-toggle-title">${t('Autofill login fields')}</span>
+                                    <span class="ccv-defaults-toggle-desc">${t('Auto-fills username (subdomain) and password (demo) on /onderhoud/Login.php')}</span>
+                                </div>
+                                <label class="ccv-toggle">
+                                    <input type="checkbox" id="ccv-autofill-login" ${config.autofillLogin ? 'checked' : ''}>
+                                    <span class="ccv-toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ccv-settings-group">
                         <label class="ccv-settings-label">${t('Updates')}</label>
                         <span class="ccv-hint">${t('Current version')}: v${VERSION}</span>
                         <button class="ccv-btn ccv-btn-primary" data-action="check-updates" style="margin-top: 8px; width: 100%; justify-content: center;">${icons.refresh}<span>${t('Check for Updates')}</span></button>
@@ -1485,6 +1531,7 @@ const CCVToolbar = (() => {
                     if (data.customColors) config.customColors = data.customColors;
                     if (data.position) config.position = data.position;
                     if (typeof data.usesDefaultConfig === 'boolean') config.usesDefaultConfig = data.usesDefaultConfig;
+                    if (typeof data.autofillLogin === 'boolean') config.autofillLogin = data.autofillLogin;
                     applyTheme();
                     saveConfig();
                     render();
@@ -2229,6 +2276,7 @@ const CCVToolbar = (() => {
 
     const init = async () => {
         loadConfig();
+        autofillLoginFields();
         await loadTranslations(config.language);
         setupLoaderListeners();
 
@@ -2428,6 +2476,11 @@ const CCVToolbar = (() => {
                     updateDefaultsStatus();
                     showToast(t('Using custom config for this domain'));
                 }
+            }
+            if (e.target.id === 'ccv-autofill-login') {
+                config.autofillLogin = e.target.checked;
+                saveConfig();
+                showToast(config.autofillLogin ? t('Login autofill enabled') : t('Login autofill disabled'));
             }
         });
         document.addEventListener('mousemove', handleMouseMove);
