@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.0.2';
+    const VERSION = '2.0.3';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -400,6 +400,34 @@ const CCVToolbar = (() => {
     };
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
+
+    const getShopInfo = () => {
+        let shopId = null;
+        let node = null;
+        let theme = null;
+        
+        // Extract shop ID from script src like: /Files/10/387000/<shopid>/Oliver/Scripts.parsed_20.js
+        const scripts = document.querySelectorAll('script[src*="/Files/"]');
+        for (const script of scripts) {
+            const match = script.src.match(/\/Files\/\d+\/\d+\/(\d+)\//);
+            if (match) {
+                shopId = match[1];
+                break;
+            }
+        }
+        
+        const nodeScript = document.querySelector('script[type="text/node-info"]');
+        if (nodeScript) {
+            node = nodeScript.textContent.trim();
+        }
+        
+        const themeScript = document.querySelector('script[type="text/theme-info"]');
+        if (themeScript) {
+            theme = themeScript.textContent.trim();
+        }
+        
+        return { shopId, node, theme };
+    };
 
     const showToast = (message, doRenderHtml = false) => {
         const existing = document.querySelector('.ccv-toast');
@@ -832,12 +860,20 @@ const CCVToolbar = (() => {
                     <button class="ccv-btn-icon" data-action="hide" data-tooltip="${t('Hide')}">${icons.close}</button>
                 </div>
             </div>
-            <div class="ccv-tabs">
+            <div class="ccv-tab-container">
                 <button class="ccv-tab active" data-tab="links">${t('Links')}</button>
                 <button class="ccv-tab" data-tab="actions">${t('Actions')}</button>
                 <button class="ccv-tab" data-tab="settings">${t('Settings')}</button>
             </div>
             <div class="ccv-content">
+                ${(() => {
+                    const info = getShopInfo();
+                    const parts = [];
+                    if (info.node) parts.push(`<span class="ccv-shop-info-item" data-tooltip="${t('Node')}" data-copy="${info.node}">${icons.server}${info.node}</span>`);
+                    if (info.shopId) parts.push(`<span class="ccv-shop-info-item" data-tooltip="${t('Shop ID')}" data-copy="${info.shopId}">${icons.database}${info.shopId}</span>`);
+                    if (info.theme) parts.push(`<span class="ccv-shop-info-item" data-tooltip="${t('Theme')}" data-copy="${info.theme}">${icons.palette}${info.theme}</span>`);
+                    return parts.length > 0 ? `<div class="ccv-shop-info-bar">${parts.join('')}</div>` : '';
+                })()}
                 <div class="ccv-tab-content active" data-content="links">
                     <div class="ccv-section">
                         <div class="ccv-section-header">
@@ -1968,6 +2004,12 @@ const CCVToolbar = (() => {
         const domainId = e.target.closest('[data-domain-id]')?.dataset.domainId;
         const urlId = e.target.closest('[data-url-id]')?.dataset.urlId;
         const id = e.target.closest('[data-id]')?.dataset.id;
+        const copyValue = e.target.closest('[data-copy]')?.dataset.copy;
+
+        if (copyValue) {
+            copyToClipboard(copyValue);
+            return;
+        }
 
         if (tab) {
             elements.toolbar.querySelectorAll('.ccv-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
