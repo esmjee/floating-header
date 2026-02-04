@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.0.1';
+    const VERSION = '2.0.2';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -521,15 +521,24 @@ const CCVToolbar = (() => {
         let x = e.clientX;
         let y = e.clientY;
         
-        if (x + rect.width > window.innerWidth) {
-            x = window.innerWidth - rect.width - 8;
+        let originX = 'left';
+        let originY = 'top';
+        
+        if (x + rect.width > window.innerWidth - 8) {
+            x = Math.max(8, e.clientX - rect.width);
+            originX = 'right';
         }
-        if (y + rect.height > window.innerHeight) {
-            y = window.innerHeight - rect.height - 8;
+        if (y + rect.height > window.innerHeight - 8) {
+            y = Math.max(8, e.clientY - rect.height);
+            originY = 'bottom';
         }
+        
+        x = Math.max(8, Math.min(x, window.innerWidth - rect.width - 8));
+        y = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8));
         
         menu.style.left = `${x}px`;
         menu.style.top = `${y}px`;
+        menu.style.transformOrigin = `${originX} ${originY}`;
 
         const buttons = menu.querySelectorAll('.ccv-context-item');
         let itemIndex = 0;
@@ -817,7 +826,7 @@ const CCVToolbar = (() => {
         
         panel.innerHTML = `
             <div class="ccv-header">
-                <div class="ccv-logo">${icons.logo}<span>CCV Dev Tools</span>${getConfigStatusIcon()}</div>
+                <div class="ccv-logo">${icons.logo}<span>CCVShop Dev Tools</span>${getConfigStatusIcon()}</div>
                 <div class="ccv-header-actions">
                     <button class="ccv-btn-icon" data-action="collapse" data-tooltip="${t('Compact view')}">${icons.collapse}</button>
                     <button class="ccv-btn-icon" data-action="hide" data-tooltip="${t('Hide')}">${icons.close}</button>
@@ -882,7 +891,7 @@ const CCVToolbar = (() => {
                         <div class="ccv-theme-grid" style="grid-template-columns: repeat(3, 1fr);">
                             <div class="ccv-theme-option ${config.initialView === 'hidden' ? 'active' : ''}" data-initial-view="hidden">
                                 <div class="preview" style="background: var(--ccv-surface-hover);">${icons.close}</div>
-                                <span class="name">${t('Hidden')}</span>
+                                <span class="name">${t('Minimized')}</span>
                             </div>
                             <div class="ccv-theme-option ${config.initialView === 'expanded' ? 'active' : ''}" data-initial-view="expanded">
                                 <div class="preview" style="background: var(--ccv-accent);">${icons.expand}</div>
@@ -890,7 +899,7 @@ const CCVToolbar = (() => {
                             </div>
                             <div class="ccv-theme-option ${config.initialView === 'compact' ? 'active' : ''}" data-initial-view="compact">
                                 <div class="preview" style="background: var(--ccv-accent);">${icons.collapse}</div>
-                                <span class="name">${t('Minimized')}</span>
+                                <span class="name">${t('Compact')}</span>
                             </div>
                         </div>
                     </div>
@@ -2203,12 +2212,15 @@ const CCVToolbar = (() => {
         let toggleDragging = false;
         let toggleDragOffset = { x: 0, y: 0 };
         let toggleDragMoved = false;
+        let toggleDragStartPos = { x: 0, y: 0 };
+        const DRAG_THRESHOLD = 5;
         
         elements.toggleBtn.onmousedown = (e) => {
             if (config.toggleDragLocked) return;
+            if (e.button !== 0) return;
             toggleDragging = true;
             toggleDragMoved = false;
-            elements.toggleBtn.classList.add('dragging');
+            toggleDragStartPos = { x: e.clientX, y: e.clientY };
             toggleDragOffset = {
                 x: e.clientX - (config.togglePosition.x ?? (window.innerWidth - 64)),
                 y: e.clientY - (config.togglePosition.y ?? (window.innerHeight - 64))
@@ -2218,7 +2230,17 @@ const CCVToolbar = (() => {
         
         document.addEventListener('mousemove', (e) => {
             if (!toggleDragging) return;
-            toggleDragMoved = true;
+            
+            const dx = Math.abs(e.clientX - toggleDragStartPos.x);
+            const dy = Math.abs(e.clientY - toggleDragStartPos.y);
+            
+            if (!toggleDragMoved && (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD)) {
+                toggleDragMoved = true;
+                elements.toggleBtn.classList.add('dragging');
+            }
+            
+            if (!toggleDragMoved) return;
+            
             const x = Math.max(0, Math.min(window.innerWidth - 44, e.clientX - toggleDragOffset.x));
             const y = Math.max(0, Math.min(window.innerHeight - 44, e.clientY - toggleDragOffset.y));
             elements.toggleBtn.style.left = `${x}px`;
@@ -2238,9 +2260,22 @@ const CCVToolbar = (() => {
             }
         });
         
+        window.addEventListener('resize', () => {
+            if (config.togglePosition.x !== null && config.togglePosition.y !== null) {
+                const x = Math.max(0, Math.min(window.innerWidth - 44, config.togglePosition.x));
+                const y = Math.max(0, Math.min(window.innerHeight - 44, config.togglePosition.y));
+                elements.toggleBtn.style.left = `${x}px`;
+                elements.toggleBtn.style.top = `${y}px`;
+                if (x !== config.togglePosition.x || y !== config.togglePosition.y) {
+                    config.togglePosition = { x, y };
+                }
+            }
+        });
+        
         elements.toggleBtn.onclick = (e) => {
             if (toggleDragMoved) {
                 e.preventDefault();
+                toggleDragMoved = false;
                 return;
             }
             handleClick({ target: { closest: (s) => s === '[data-action]' ? { dataset: { action: 'show' } } : null } });

@@ -1708,7 +1708,7 @@
     border: 1px solid var(--ccv-border);
     border-radius: 50%;
     color: var(--ccv-accent);
-    cursor: grab;
+    cursor: pointer;
     box-shadow: var(--ccv-shadow);
     display: none;
     align-items: center;
@@ -1727,10 +1727,6 @@
     &:hover {
         transform: scale(1.05);
         border-color: var(--ccv-accent);
-    }
-    
-    &:active {
-        cursor: grabbing;
     }
 
     &.visible {
@@ -1833,6 +1829,7 @@
     box-shadow: var(--ccv-shadow);
     backdrop-filter: blur(20px);
     animation: ccv-context-in 0.15s ease;
+    transform-origin: left top;
 }
 
 @keyframes ccv-context-in {
