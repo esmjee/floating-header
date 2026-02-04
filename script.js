@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.0.4';
+    const VERSION = '2.0.5';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -56,6 +56,7 @@ const CCVToolbar = (() => {
         usesDefaultConfig: true,
         language: 'en',
         autofillLogin: true,
+        loremAutofill: true,
         domains: [
             { id: '1', name: 'Hoofd Webshop', url: 'https://ejansen.ccvdev.nl', icon: 'globe', showInCompact: true, color: '' },
             { id: '2', name: 'Admin', url: 'https://ejansen-admin.ccvdev.nl', icon: 'users', showInCompact: false, color: '' },
@@ -316,18 +317,6 @@ const CCVToolbar = (() => {
         return null;
     };
 
-    const isCurrentMatchingDefaults = () => {
-        const defaults = getDefaultsFromCookie();
-        if (!defaults) return null;
-        return (
-            config.mode === defaults.mode &&
-            config.color === defaults.color &&
-            config.compactLayout === defaults.compactLayout &&
-            config.initialView === defaults.initialView &&
-            JSON.stringify(config.customColors || []) === JSON.stringify(defaults.customColors || [])
-        );
-    };
-
     const saveDefaultsToCookie = () => {
         const defaults = {
             mode: config.mode,
@@ -405,6 +394,139 @@ const CCVToolbar = (() => {
             usernameInput.value = subdomain;
             passwordInput.value = "demo";
         }
+    };
+
+    const loremText = `Lorem ipsum dolor sit amet, 
+    consectetur adipiscing elit. Pellentesque malesuada viverra quam at mattis. 
+    Pellentesque posuere, risus sed ornare convallis, mi tortor tempus nisi, 
+    sit amet malesuada nunc lectus finibus lectus. Pellentesque rhoncus ante et porttitor mollis. 
+    Curabitur felis enim, accumsan in sollicitudin eu, laoreet a enim. 
+    Nunc id massa eu velit convallis faucibus. Maecenas cursus nisi quis nunc commodo vehicula. 
+    Maecenas molestie eros vel augue tempus elementum. Vivamus pretium tortor suscipit venenatis tempor. 
+    Quisque convallis massa sed eros fringilla, non lacinia est eleifend. 
+    Donec sit amet ligula auctor leo rutrum mattis. Cras hendrerit enim eu nisl dignissim, vitae viverra mi suscipit. 
+    Morbi vel bibendum massa. Phasellus ipsum erat, ornare sed malesuada vel, egestas quis purus. 
+    Suspendisse ex dui, pellentesque sit amet sodales eget, congue et risus. 
+    Mauris fringilla risus vitae augue aliquam, a mollis tellus gravida. Nulla facilisi. 
+    Aenean et nisi in sem elementum eleifend. Sed ac pharetra purus, non feugiat ipsum. 
+    Suspendisse cursus augue eu felis pharetra, eu volutpat libero cursus. 
+    Interdum et malesuada fames ac ante ipsum primis in faucibus. In hac habitasse platea dictumst. 
+    Nunc et mi finibus massa placerat porttitor. Quisque pretium porta suscipit. 
+    Sed posuere orci erat, eu cursus risus pellentesque non. In hac habitasse platea dictumst. 
+    Nullam tempor tristique dolor, vel vestibulum quam varius non. Integer fringilla lacus in enim tristique cursus. 
+    Morbi consectetur vestibulum ipsum a ultricies. Nunc porta cursus commodo. 
+    Nullam aliquet lobortis sapien, at mattis lectus tristique quis. 
+    Pellentesque tristique felis sit amet ipsum efficitur pharetra. 
+    Nullam quis nibh blandit, aliquet orci non, tempus libero. Phasellus venenatis ut quam vel egestas. 
+    Nam tempus, ipsum vel mattis sollicitudin, ligula sapien hendrerit dui, ac tempor risus tortor at urna.
+    Sed lacus libero, fermentum quis scelerisque porttitor, tincidunt vitae purus. 
+    Mauris at tincidunt tortor, non aliquet velit. 
+    Donec sit amet magna consequat, eleifend quam non, aliquam ex. 
+    Nulla convallis nisl eget risus tincidunt dapibus. Vestibulum eu est ut libero sodales finibus. 
+    Etiam quam sem, efficitur in molestie vel, auctor vel purus. Sed in congue elit, vel semper neque. 
+    Duis vel lorem at elit lobortis semper. Vivamus sed ipsum id tellus suscipit placerat eu in lacus. 
+    Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; 
+    Ut vel neque sit amet sapien dapibus vehicula non in elit. Donec gravida venenatis urna et dignissim. 
+    Phasellus vitae vulputate enim, nec blandit arcu. Donec egestas, arcu sed bibendum dignissim, 
+    sapien lectus egestas est, ut convallis dolor dui ac sapien. Nulla nisl est, dictum non nisl nec, 
+    rutrum blandit eros. Aenean a nibh purus. In vitae mollis magna. Etiam ut porttitor nunc. 
+    Pellentesque molestie nec metus eget efficitur. Maecenas sem lectus, aliquet eget egestas non, semper in lectus. 
+    Fusce semper hendrerit fringilla. Proin aliquet lacus et magna finibus sollicitudin. 
+    Integer pulvinar ligula auctor neque vulputate luctus. Nullam eleifend tristique quam. 
+    Sed eu semper metus. Aenean finibus neque eu convallis pretium. Ut vel tellus id velit sollicitudin fringilla. 
+    Praesent ornare nunc non ipsum tempor, et malesuada libero ultrices. 
+    Curabitur varius tortor et eros bibendum varius. Phasellus.`;
+
+    const generateLorem = (wordCount) => {
+        const words = loremText.split(' ');
+        const result = [];
+        for (let i = 0; i < wordCount; i++) {
+            result.push(words[i % words.length]);
+        }
+        return result.join(' ');
+    };
+
+    const setupLoremAutofill = () => {
+        document.addEventListener('keydown', (event) => {
+            if (!config.loremAutofill) return;
+            if (event.key !== 'Enter') return;
+
+            const activeElement = document.activeElement;
+            if (!activeElement) return;
+
+            const value = (activeElement.value || activeElement.textContent).trim();
+            const match = value.match(/lorem(\d{1,3})$/i);
+            if (!match) return;
+
+            event.preventDefault();
+
+            let wordCount = parseInt(match[1], 10);
+            if (isNaN(wordCount)) return;
+            if (wordCount > 500) wordCount = 500;
+
+            const newText = generateLorem(wordCount);
+
+            activeElement.value = value.replace(/lorem\d+$/i, newText);
+        });
+
+        const setupCKEditorLorem = () => {
+            if (typeof CKEDITOR === 'undefined') return;
+
+            CKEDITOR.on('instanceReady', (evt) => {
+                const editor = evt.editor;
+                
+                editor.on('key', (keyEvt) => {
+                    if (!config.loremAutofill) return;
+                    if (keyEvt.data.keyCode !== 13) return;
+
+                    const data = editor.getData();
+                    const textContent = data.replace(/<[^>]*>/g, '').trim();
+                    const match = textContent.match(/lorem(\d{1,3})$/i);
+                    
+                    if (!match) return;
+
+                    keyEvt.cancel();
+
+                    let wordCount = parseInt(match[1], 10);
+                    if (isNaN(wordCount)) return;
+                    if (wordCount > 500) wordCount = 500;
+
+                    const newText = generateLorem(wordCount);
+                    
+                    const newData = data.replace(/lorem\d+/i, newText);
+                    editor.setData(newData);
+                });
+            });
+
+            for (const name in CKEDITOR.instances) {
+                const editor = CKEDITOR.instances[name];
+                if (editor.loremAutofillAttached) continue;
+                editor.loremAutofillAttached = true;
+                
+                editor.on('key', (keyEvt) => {
+                    if (!config.loremAutofill) return;
+                    if (keyEvt.data.keyCode !== 13) return;
+
+                    const data = editor.getData();
+                    const textContent = data.replace(/<[^>]*>/g, '').trim();
+                    const match = textContent.match(/lorem(\d{1,3})$/i);
+                    
+                    if (!match) return;
+
+                    keyEvt.cancel();
+
+                    let wordCount = parseInt(match[1], 10);
+                    if (isNaN(wordCount)) return;
+                    if (wordCount > 500) wordCount = 500;
+
+                    const newText = generateLorem(wordCount);
+                    const newData = data.replace(/lorem\d+/i, newText);
+                    editor.setData(newData);
+                });
+            }
+        };
+
+        setTimeout(setupCKEditorLorem, 3000);
     };
 
     const detachFromDefaults = () => {
@@ -999,6 +1121,21 @@ const CCVToolbar = (() => {
                         </div>
                     </div>
                     <div class="ccv-settings-group">
+                        <label class="ccv-settings-label">${t('Lorem Autofill')}</label>
+                        <div class="ccv-defaults-card">
+                            <div class="ccv-defaults-toggle-row">
+                                <div class="ccv-defaults-toggle-info">
+                                    <span class="ccv-defaults-toggle-title">${t('Lorem ipsum generator')}</span>
+                                    <span class="ccv-defaults-toggle-desc">${t('Type "Lorem20" and press Enter to generate 20 lorem ipsum words')}</span>
+                                </div>
+                                <label class="ccv-toggle">
+                                    <input type="checkbox" id="ccv-lorem-autofill" ${config.loremAutofill ? 'checked' : ''}>
+                                    <span class="ccv-toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ccv-settings-group">
                         <label class="ccv-settings-label">${t('Updates')}</label>
                         <span class="ccv-hint">${t('Current version')}: v${VERSION}</span>
                         <button class="ccv-btn ccv-btn-primary" data-action="check-updates" style="margin-top: 8px; width: 100%; justify-content: center;">${icons.refresh}<span>${t('Check for Updates')}</span></button>
@@ -1532,6 +1669,7 @@ const CCVToolbar = (() => {
                     if (data.position) config.position = data.position;
                     if (typeof data.usesDefaultConfig === 'boolean') config.usesDefaultConfig = data.usesDefaultConfig;
                     if (typeof data.autofillLogin === 'boolean') config.autofillLogin = data.autofillLogin;
+                    if (typeof data.loremAutofill === 'boolean') config.loremAutofill = data.loremAutofill;
                     applyTheme();
                     saveConfig();
                     render();
@@ -2277,6 +2415,7 @@ const CCVToolbar = (() => {
     const init = async () => {
         loadConfig();
         autofillLoginFields();
+        setupLoremAutofill();
         await loadTranslations(config.language);
         setupLoaderListeners();
 
@@ -2481,6 +2620,11 @@ const CCVToolbar = (() => {
                 config.autofillLogin = e.target.checked;
                 saveConfig();
                 showToast(config.autofillLogin ? t('Login autofill enabled') : t('Login autofill disabled'));
+            }
+            if (e.target.id === 'ccv-lorem-autofill') {
+                config.loremAutofill = e.target.checked;
+                saveConfig();
+                showToast(config.loremAutofill ? t('Lorem autofill enabled') : t('Lorem autofill disabled'));
             }
         });
         document.addEventListener('mousemove', handleMouseMove);
