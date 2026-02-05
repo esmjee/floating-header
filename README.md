@@ -185,6 +185,10 @@ Use semantic versioning: `MAJOR.MINOR.PATCH`
 - MINOR: New features
 - PATCH: Bug fixes
 
+# Sources
+Other icons from https://lucide.dev/icons 
+
+
 ## License
 
 MIT License - Feel free to modify and share!

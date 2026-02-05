@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.0.5';
+    const VERSION = '2.0.6';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -78,7 +78,8 @@ const CCVToolbar = (() => {
             { id: 'Ceyda', name: 'Ceyda', color: '#808080' },
             { id: 'Martoni', name: 'Martoni', color: '#f7e7ce' },
             { id: 'Sensa', name: 'Sensa', color: '#dc5a5d' }
-        ]
+        ],
+        infoBarPosition: 'center'
     };
 
     const itemColors = [
@@ -114,7 +115,6 @@ const CCVToolbar = (() => {
     let elements = {};
 
     const icons = {
-        // https://lucide.dev/icons
         globe: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`,
         logo: `<svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`,
         collapse: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg>`,
@@ -139,6 +139,7 @@ const CCVToolbar = (() => {
         star: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
         starFilled: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
         menu: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>`,
+        moreVertical: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
         home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
         file: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
         folder: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>`,
@@ -559,7 +560,6 @@ const CCVToolbar = (() => {
         let node = null;
         let theme = null;
         
-        // Extract shop ID from script src like: /Files/10/387000/<shopid>/Oliver/Scripts.parsed_20.js
         const scripts = document.querySelectorAll('script[src*="/Files/"]');
         for (const script of scripts) {
             const match = script.src.match(/\/Files\/\d+\/\d+\/(\d+)\//);
@@ -693,7 +693,10 @@ const CCVToolbar = (() => {
             if (item.separator) {
                 return '<div class="ccv-context-separator"></div>';
             }
-            return `<button class="ccv-context-item ${item.danger ? 'danger' : ''}">${item.icon || ''}${item.label}</button>`;
+            const classes = ['ccv-context-item'];
+            if (item.danger) classes.push('danger');
+            if (item.active) classes.push('active');
+            return `<button class="${classes.join(' ')}">${item.icon || ''}${item.label}${item.active ? icons.check : ''}</button>`;
         }).join('');
 
         document.body.appendChild(menu);
@@ -1013,20 +1016,23 @@ const CCVToolbar = (() => {
                     <button class="ccv-btn-icon" data-action="hide" data-tooltip="${t('Hide')}">${icons.close}</button>
                 </div>
             </div>
+            ${(() => {
+                const info = getShopInfo();
+                const parts = [];
+                if (info.node) parts.push(`<span class="ccv-shop-info-item" data-tooltip="${t('Node')}" data-copy="${info.node}">${icons.server}${info.node}</span>`);
+                if (info.shopId) parts.push(`<span class="ccv-shop-info-item" data-tooltip="${t('Shop ID')}" data-copy="${info.shopId}">${icons.database}${info.shopId}</span>`);
+                if (info.theme) parts.push(`<span class="ccv-shop-info-item" data-tooltip="${t('Theme')}" data-copy="${info.theme}">${icons.palette}${info.theme}</span>`);
+                if (parts.length > 0) {
+                    parts.push(`<button class="ccv-info-bar-menu" data-action="info-bar-menu" data-tooltip="${t('Position')}">${icons.moreVertical}</button>`);
+                }
+                return parts.length > 0 ? `<div class="ccv-shop-info-bar" data-position="${config.infoBarPosition || 'center'}">${parts.join('')}</div>` : '';
+            })()}
             <div class="ccv-tab-container">
                 <button class="ccv-tab active" data-tab="links">${t('Links')}</button>
                 <button class="ccv-tab" data-tab="actions">${t('Actions')}</button>
                 <button class="ccv-tab" data-tab="settings">${t('Settings')}</button>
             </div>
             <div class="ccv-content">
-                ${(() => {
-                    const info = getShopInfo();
-                    const parts = [];
-                    if (info.node) parts.push(`<span class="ccv-shop-info-item" data-tooltip="${t('Node')}" data-copy="${info.node}">${icons.server}${info.node}</span>`);
-                    if (info.shopId) parts.push(`<span class="ccv-shop-info-item" data-tooltip="${t('Shop ID')}" data-copy="${info.shopId}">${icons.database}${info.shopId}</span>`);
-                    if (info.theme) parts.push(`<span class="ccv-shop-info-item" data-tooltip="${t('Theme')}" data-copy="${info.theme}">${icons.palette}${info.theme}</span>`);
-                    return parts.length > 0 ? `<div class="ccv-shop-info-bar">${parts.join('')}</div>` : '';
-                })()}
                 <div class="ccv-tab-content active" data-content="links">
                     <div class="ccv-section">
                         <div class="ccv-section-header">
@@ -1095,12 +1101,16 @@ const CCVToolbar = (() => {
                     <div class="ccv-settings-group">
                         <label class="ccv-settings-label">${t('Language')}</label>
                         <div class="ccv-theme-grid" style="grid-template-columns: repeat(2, 1fr);">
-                            <div class="ccv-theme-option ${config.language === 'en' ? 'active' : ''}" data-language="en">
-                                <div class="preview" style="background: var(--ccv-surface-hover); font-size: 22px;">🇬🇧</div>
+                            <div class="ccv-theme-option ccv-language-option ${config.language === 'en' ? 'active' : ''}" data-language="en">
+                                <div class="preview ccv-flag-preview">
+                                    <img src="https://flagcdn.com/w40/us.png" alt="US" style="width: 100%; height: 100%; object-fit: cover;">
+                                </div>
                                 <span class="name">English</span>
                             </div>
-                            <div class="ccv-theme-option ${config.language === 'nl' ? 'active' : ''}" data-language="nl">
-                                <div class="preview" style="background: var(--ccv-surface-hover); font-size: 22px;">🇳🇱</div>
+                            <div class="ccv-theme-option ccv-language-option ${config.language === 'nl' ? 'active' : ''}" data-language="nl">
+                                <div class="preview ccv-flag-preview">
+                                    <img src="https://flagcdn.com/w40/nl.png" alt="NL" style="width: 100%; height: 100%; object-fit: cover;">
+                                </div>
                                 <span class="name">Nederlands</span>
                             </div>
                         </div>
@@ -1940,6 +1950,24 @@ const CCVToolbar = (() => {
         };
     };
 
+    const presetWebshopThemes = [
+        { id: 'Oliver', name: 'Oliver' },
+        { id: 'Macro', name: 'Macro' },
+        { id: 'Exo', name: 'Exo' },
+        { id: 'Levi', name: 'Levi' },
+        { id: 'Ivy', name: 'Ivy' },
+        { id: 'Tailor', name: 'Tailor' },
+        { id: 'Mila', name: 'Mila' },
+        { id: 'Ceyda', name: 'Ceyda' },
+        { id: 'Martoni', name: 'Martoni' },
+        { id: 'Sensa', name: 'Sensa' },
+        { separator: true },
+        { id: 'Macro_Auto', name: 'Macro Auto' },
+        { id: 'Tailor', name: 'Tailor' },
+        { id: 'Mila_Celebration', name: 'Mila Celebration' },
+        { id: 'Ceyda_Sport', name: 'Ceyda Sport' }
+    ];
+
     const showWebshopThemeModal = (theme = null) => {
         const isEdit = !!theme;
         
@@ -1950,7 +1978,13 @@ const CCVToolbar = (() => {
             </div>
             <div class="ccv-input-group">
                 <label class="ccv-input-label">${t('Theme ID')} (case-sensitive)</label>
-                <input type="text" class="ccv-input" id="ccv-theme-id" placeholder="e.g. oliver" value="${theme?.id || ''}" ${isEdit ? 'disabled' : ''}>
+                <span class="ccv-hint" style="margin-top: 4px; margin-bottom: 8px;">${t('This ID is used to apply the theme to your webshop. Use preset values or the exact theme folder name.')}</span>
+                <div style="display: flex; gap: 8px; align-items: stretch;">
+                    <input type="text" class="ccv-input" id="ccv-theme-id" placeholder="e.g. Oliver" value="${theme?.id || ''}" style="flex: 1;">
+                    <button type="button" class="ccv-btn ccv-btn-preset" id="ccv-theme-preset-btn" style="flex: 0; width: auto;">
+                        ${t("Presets")} ${icons.chevronDown}
+                    </button>
+                </div>
             </div>
             <div class="ccv-input-group">
                 <label class="ccv-input-label">${t('Color')}</label>
@@ -1971,7 +2005,12 @@ const CCVToolbar = (() => {
             if (isEdit) {
                 const index = config.webshopThemes.findIndex(t => t.id === theme.id);
                 if (index !== -1) {
-                    config.webshopThemes[index] = { ...config.webshopThemes[index], name, color };
+                    const newId = id;
+                    if (newId !== theme.id && config.webshopThemes.some(t => t.id === newId)) {
+                        showToast(t('Theme ID already exists'));
+                        return;
+                    }
+                    config.webshopThemes[index] = { ...config.webshopThemes[index], id: newId, name, color };
                 }
                 showToast(t('Theme updated'));
             } else {
@@ -1993,19 +2032,43 @@ const CCVToolbar = (() => {
             modal.remove();
             showToast('Theme deleted');
         } : null);
+        
+        const presetBtn = document.getElementById('ccv-theme-preset-btn');
+        if (presetBtn) {
+            presetBtn.addEventListener('click', (e) => {
+                const menuItems = presetWebshopThemes.map(preset => {
+                    if (preset.separator) {
+                        return { separator: true };
+                    }
+                    return {
+                        label: preset.name,
+                        action: () => {
+                            document.getElementById('ccv-theme-id').value = preset.id;
+                            document.getElementById('ccv-theme-name').value = preset.name;
+                        }
+                    };
+                });
+                showContextMenu(e, menuItems);
+            });
+        }
     };
 
     const renderWebshopThemes = () => {
         const container = document.getElementById('ccv-webshop-themes');
         if (!container) return;
 
-        container.innerHTML = config.webshopThemes.map((theme, index) => `
-            <div class="ccv-webshop-theme-btn" data-webshop-theme="${theme.id}" data-theme-index="${index}">
+        const currentTheme = getShopInfo().theme;
+
+        container.innerHTML = config.webshopThemes.map((theme, index) => {
+            const isActive = currentTheme && theme.id === currentTheme;
+            return `
+            <div class="ccv-webshop-theme-btn ${isActive ? 'active' : ''}" data-webshop-theme="${theme.id}" data-theme-index="${index}">
                 <span class="ccv-webshop-drag">${icons.menu}</span>
                 <span class="ccv-webshop-color" style="background: ${theme.color}"></span>
                 <span class="ccv-webshop-name">${theme.name}</span>
+                ${isActive ? `<span class="ccv-webshop-active">${icons.check}</span>` : ''}
             </div>
-        `).join('');
+        `}).join('');
 
         let draggedElement = null;
         let wasDragged = false;
@@ -2142,6 +2205,28 @@ const CCVToolbar = (() => {
         renderThemeGrid();
     };
 
+    const updateInfoBarPosition = () => {
+        if (!elements.toolbar) return;
+        
+        const infoBar = elements.toolbar.querySelector('.ccv-shop-info-bar');
+        if (!infoBar) return;
+        
+        const position = config.infoBarPosition || 'center';
+        const tabContainer = elements.toolbar.querySelector('.ccv-tab-container');
+        const content = elements.toolbar.querySelector('.ccv-content');
+        const header = elements.toolbar.querySelector('.ccv-header');
+        
+        infoBar.dataset.position = position;
+        
+        if (position === 'top' && header) {
+            header.after(infoBar);
+        } else if (position === 'center' && tabContainer) {
+            tabContainer.after(infoBar);
+        } else if (position === 'bottom' && content) {
+            content.after(infoBar);
+        }
+    };
+
     const constrainPosition = () => {
         if (!elements.toolbar) return;
         const rect = elements.toolbar.getBoundingClientRect();
@@ -2232,7 +2317,13 @@ const CCVToolbar = (() => {
                 if (newLang !== config.language) {
                     config.language = newLang;
                     saveConfig();
-                    loadTranslations(newLang).then(() => render());
+                    loadTranslations(newLang).then(() => {
+                        render();
+                        setTimeout(() => {
+                            const settingsTab = elements.toolbar?.querySelector('[data-tab="settings"]');
+                            if (settingsTab) settingsTab.click();
+                        }, 0);
+                    });
                 }
                 return;
             }
@@ -2275,6 +2366,41 @@ const CCVToolbar = (() => {
                 elements.toolbar.classList.remove('hidden');
                 render();
                 elements.toggleBtn.classList.remove('visible');
+                break;
+            case 'info-bar-menu':
+                const currentPos = config.infoBarPosition || 'center';
+                showContextMenu(e, [
+                    { 
+                        icon: icons.chevronUp, 
+                        label: t('Top'), 
+                        action: () => {
+                            config.infoBarPosition = 'top';
+                            saveConfig();
+                            updateInfoBarPosition();
+                        },
+                        active: currentPos === 'top'
+                    },
+                    { 
+                        icon: icons.minus, 
+                        label: t('Center'), 
+                        action: () => {
+                            config.infoBarPosition = 'center';
+                            saveConfig();
+                            updateInfoBarPosition();
+                        },
+                        active: currentPos === 'center'
+                    },
+                    { 
+                        icon: icons.chevronDown, 
+                        label: t('Bottom'), 
+                        action: () => {
+                            config.infoBarPosition = 'bottom';
+                            saveConfig();
+                            updateInfoBarPosition();
+                        },
+                        active: currentPos === 'bottom'
+                    }
+                ]);
                 break;
             case 'add-domain':
                 showDomainModal();
@@ -2406,6 +2532,7 @@ const CCVToolbar = (() => {
             renderUrlsList();
             renderThemeGrid();
             renderWebshopThemes();
+            updateInfoBarPosition();
         }
 
         setupTooltips(elements.toolbar);
