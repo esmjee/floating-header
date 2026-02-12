@@ -1013,7 +1013,7 @@ const CCVToolbar = (() => {
                 <div class="ccv-logo">${icons.logo}<span>CCVShop Dev Tools</span>${getConfigStatusIcon()}</div>
                 <div class="ccv-header-actions">
                     <button class="ccv-btn-icon" data-action="collapse" data-tooltip="${t('Compact view')}">${icons.collapse}</button>
-                    <button class="ccv-btn-icon" data-action="hide" data-tooltip="${t('Hide')}">${icons.close}</button>
+                    <button class="ccv-btn-icon" data-action="minimized" data-tooltip="${t('Minimized')}">${icons.close}</button>
                 </div>
             </div>
             ${(() => {
@@ -2353,7 +2353,7 @@ const CCVToolbar = (() => {
                 saveConfig();
                 render();
                 break;
-            case 'hide':
+            case 'minimized':
                 config.visible = false;
                 saveConfig();
                 elements.toolbar.classList.add('hidden');
