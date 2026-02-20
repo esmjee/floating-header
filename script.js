@@ -1013,7 +1013,7 @@ const CCVToolbar = (() => {
                 <div class="ccv-logo">${icons.logo}<span>CCVShop Dev Tools</span>${getConfigStatusIcon()}</div>
                 <div class="ccv-header-actions">
                     <button class="ccv-btn-icon" data-action="collapse" data-tooltip="${t('Compact view')}">${icons.collapse}</button>
-                    <button class="ccv-btn-icon" data-action="minimized" data-tooltip="${t('Minimized')}">${icons.close}</button>
+                    <button class="ccv-btn-icon" data-action="minimize" data-tooltip="${t('Minimize')}">${icons.close}</button>
                 </div>
             </div>
             ${(() => {
@@ -1229,10 +1229,10 @@ const CCVToolbar = (() => {
                 case 'minimal':
                     return `
                         <div class="ccv-compact-minimal">
-                            <button class="ccv-minimal-btn ccv-minimal-control" data-action="expand" data-tooltip="Expand">${icons.expand}</button>
+                            <button class="ccv-minimal-btn ccv-minimal-control" data-action="expand" data-tooltip="${t('Expand')}">${icons.expand}</button>
                             ${compactUrls.map(u => urlBtn(u, 'ccv-minimal-btn')).join('')}
                             ${compactDomains.map(d => domainBtn(d, 'ccv-minimal-btn')).join('')}
-                            <button class="ccv-minimal-btn ccv-minimal-control" data-action="hide" data-tooltip="Hide">${icons.close}</button>
+                            <button class="ccv-minimal-btn ccv-minimal-control" data-action="minimize" data-tooltip="${t('Minimize')}">${icons.close}</button>
                         </div>
                     `;
                 default:
@@ -1252,8 +1252,8 @@ const CCVToolbar = (() => {
                 <div class="ccv-header ccv-header-compact">
                     <div class="ccv-logo">${icons.logo}</div>
                     <div class="ccv-header-actions">
-                        <button class="ccv-btn-icon" data-action="expand" data-tooltip="Expand">${icons.expand}</button>
-                        <button class="ccv-btn-icon" data-action="hide" data-tooltip="Hide">${icons.close}</button>
+                        <button class="ccv-btn-icon" data-action="expand" data-tooltip="${t('Expand')}">${icons.expand}</button>
+                        <button class="ccv-btn-icon" data-action="minimize" data-tooltip="${t('Minimize')}">${icons.close}</button>
                     </div>
                 </div>
                 ${renderItems()}
@@ -1372,11 +1372,11 @@ const CCVToolbar = (() => {
         const content = `
             <div class="ccv-input-group">
                 <label class="ccv-input-label">${t('Name')}</label>
-                <input type="text" class="ccv-input" id="ccv-domain-name" placeholder="e.g. Production" value="${domain?.name || ''}">
+                <input type="text" class="ccv-input" id="ccv-domain-name" placeholder="${t('e.g. Production')}" value="${domain?.name || ''}">
             </div>
             <div class="ccv-input-group">
                 <label class="ccv-input-label">${t('URL')}</label>
-                <input type="text" class="ccv-input" id="ccv-domain-url" placeholder="e.g. https://myshop.ccvshop.nl" value="${domain?.url || ''}">
+                <input type="text" class="ccv-input" id="ccv-domain-url" placeholder="${t('e.g. https://myshop.ccvshop.nl')}" value="${domain?.url || ''}">
             </div>
             <div class="ccv-input-group">
                 <label class="ccv-input-label">${t('Icon')}</label>
@@ -1507,11 +1507,11 @@ const CCVToolbar = (() => {
         const content = `
             <div class="ccv-input-group">
                 <label class="ccv-input-label">${t('Name')}</label>
-                <input type="text" class="ccv-input" id="ccv-url-name" placeholder="e.g. Admin Panel" value="${urlItem?.name || ''}">
+                <input type="text" class="ccv-input" id="ccv-url-name" placeholder="${t('e.g. Admin Panel')}" value="${urlItem?.name || ''}">
             </div>
             <div class="ccv-input-group">
                 <label class="ccv-input-label">${t('Path')}</label>
-                <input type="text" class="ccv-input" id="ccv-url-path" placeholder="e.g. /admin" value="${urlItem?.url || ''}">
+                <input type="text" class="ccv-input" id="ccv-url-path" placeholder="${t('e.g. /admin')}" value="${urlItem?.url || ''}">
             </div>
             <div class="ccv-input-group">
                 <label class="ccv-input-label">${t('Icon')}</label>
@@ -1974,13 +1974,13 @@ const CCVToolbar = (() => {
         const content = `
             <div class="ccv-input-group">
                 <label class="ccv-input-label">${t('Name')}</label>
-                <input type="text" class="ccv-input" id="ccv-theme-name" placeholder="e.g. Oliver" value="${theme?.name || ''}">
+                <input type="text" class="ccv-input" id="ccv-theme-name" placeholder="${t('e.g. Oliver')}" value="${theme?.name || ''}">
             </div>
             <div class="ccv-input-group">
                 <label class="ccv-input-label">${t('Theme ID')} (case-sensitive)</label>
                 <span class="ccv-hint" style="margin-top: 4px; margin-bottom: 8px;">${t('This ID is used to apply the theme to your webshop. Use preset values or the exact theme folder name.')}</span>
                 <div style="display: flex; gap: 8px; align-items: stretch;">
-                    <input type="text" class="ccv-input" id="ccv-theme-id" placeholder="e.g. Oliver" value="${theme?.id || ''}" style="flex: 1;">
+                    <input type="text" class="ccv-input" id="ccv-theme-id" placeholder="${t('e.g. Oliver')}" value="${theme?.id || ''}" style="flex: 1;">
                     <button type="button" class="ccv-btn ccv-btn-preset" id="ccv-theme-preset-btn" style="flex: 0; width: auto;">
                         ${t("Presets")} ${icons.chevronDown}
                     </button>
@@ -2353,7 +2353,7 @@ const CCVToolbar = (() => {
                 saveConfig();
                 render();
                 break;
-            case 'minimized':
+            case 'minimize':
                 config.visible = false;
                 saveConfig();
                 elements.toolbar.classList.add('hidden');
