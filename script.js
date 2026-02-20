@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.0.6';
+    const VERSION = '2.0.7';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -1358,7 +1358,16 @@ const CCVToolbar = (() => {
         if (onDelete) {
             overlay.querySelector('[data-action="delete-modal"]').onclick = onDelete;
         }
-        overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
+
+        let mouseDownOnOverlay = false;
+        overlay.addEventListener('mousedown', (e) => {
+            mouseDownOnOverlay = e.target === overlay;
+        });
+        overlay.addEventListener('click', (e) => {
+            if (mouseDownOnOverlay && e.target === overlay) {
+                closeModal();
+            }
+        });
 
         return overlay;
     };
