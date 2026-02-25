@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.0.8';
+    const VERSION = '2.0.9';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -331,6 +331,26 @@ const CCVToolbar = (() => {
         const domain = getBaseDomain();
         const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
         document.cookie = `ccv-toolbar-defaults=${value}; domain=${domain}; path=/; expires=${expires}; SameSite=Lax`;
+    
+        config.usesDefaultConfig = true;
+        saveConfig();
+    
+        const checkbox = elements.toolbar?.querySelector('#ccv-uses-default-config');
+        if (checkbox) checkbox.checked = true;
+    
+        const statusContainer = elements.toolbar?.querySelector('.ccv-defaults-card .ccv-defaults-status');
+        if (statusContainer) {
+            statusContainer.className = 'ccv-defaults-status ccv-defaults-match';
+            statusContainer.innerHTML = `${icons.check}<span>${t('Using synced defaults')}</span>`;
+        }
+    
+        const headerIcon = elements.toolbar?.querySelector('.ccv-config-status');
+        if (headerIcon) {
+            headerIcon.className = 'ccv-config-status ccv-config-synced';
+            headerIcon.dataset.tooltip = t('Synced with defaults');
+            headerIcon.innerHTML = icons.check;
+        }
+    
         showToast(t('Default settings saved for all domains'));
     };
 
@@ -1658,7 +1678,11 @@ const CCVToolbar = (() => {
             webshopThemes: config.webshopThemes,
             customColors: config.customColors,
             position: config.position,
-            usesDefaultConfig: config.usesDefaultConfig
+            usesDefaultConfig: config.usesDefaultConfig,
+            language: config.language,
+            infoBarPosition: config.infoBarPosition,
+            autofillLogin: config.autofillLogin,
+            loremAutofill: config.loremAutofill
         }, null, 2);
         const blob = new Blob([data], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -1694,6 +1718,8 @@ const CCVToolbar = (() => {
                     if (typeof data.usesDefaultConfig === 'boolean') config.usesDefaultConfig = data.usesDefaultConfig;
                     if (typeof data.autofillLogin === 'boolean') config.autofillLogin = data.autofillLogin;
                     if (typeof data.loremAutofill === 'boolean') config.loremAutofill = data.loremAutofill;
+                    if (data.language) config.language = data.language;
+                    if (data.infoBarPosition) config.infoBarPosition = data.infoBarPosition;
                     applyTheme();
                     saveConfig();
                     render();
