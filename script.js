@@ -1938,7 +1938,7 @@ const CCVToolbar = (() => {
             `).join('') + `
                 <div class="ccv-theme-option ccv-add-color" data-action="add-custom-color">
                     <div class="preview">${icons.add}</div>
-                    <span class="name">Custom</span>
+                    <span class="name">${t('Custom')}</span>
                 </div>
             `;
             
