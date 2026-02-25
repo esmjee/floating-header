@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.0.7';
+    const VERSION = '2.0.8';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -392,7 +392,12 @@ const CCVToolbar = (() => {
         if (usernameValueIsEmpty && passwordValueIsEmpty) {
             const hostname = window.location.hostname;
             const subdomain = getSubdomainFromHostname(hostname);
-            usernameInput.value = subdomain;
+
+            if (subdomain.endsWith('-ctf')) {
+                usernameInput.value = 'demo';
+            } else {
+                usernameInput.value = subdomain;
+            }
             passwordInput.value = "demo";
         }
     };
