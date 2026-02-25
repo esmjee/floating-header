@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.0.10';
+    const VERSION = '2.0.11';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -57,6 +57,7 @@ const CCVToolbar = (() => {
         language: 'en',
         autofillLogin: true,
         loremAutofill: true,
+        loginRedirect: true,
         domains: [
             { id: '1', name: 'Hoofd Webshop', url: 'https://ejansen.ccvdev.nl', icon: 'globe', showInCompact: true, color: '' },
             { id: '2', name: 'Admin', url: 'https://ejansen-admin.ccvdev.nl', icon: 'users', showInCompact: false, color: '' },
@@ -913,11 +914,27 @@ const CCVToolbar = (() => {
 
     const navigateUrl = (url, domain = null) => {
         const fullUrl = domain ? `${domain}${url}` : url;
+        
+        if (config.loginRedirect) {
+            const fullUrlLower = fullUrl.toLowerCase();
+            if (fullUrlLower.includes('/onderhoud/')) {
+                sessionStorage.setItem('ccv-login-redirect-url', fullUrl);
+            }
+        }
+        
         window.location.href = fullUrl;
     };
 
     const openUrlNewTab = (url, domain = null) => {
         const fullUrl = domain ? `${domain}${url}` : url;
+        
+        if (config.loginRedirect) {
+            const fullUrlLower = fullUrl.toLowerCase();
+            if (fullUrlLower.includes('/onderhoud/')) {
+                sessionStorage.setItem('ccv-login-redirect-url', fullUrl);
+            }
+        }
+        
         window.open(fullUrl, '_blank');
     };
 
@@ -1150,6 +1167,21 @@ const CCVToolbar = (() => {
                                 </div>
                                 <label class="ccv-toggle">
                                     <input type="checkbox" id="ccv-autofill-login" ${config.autofillLogin ? 'checked' : ''}>
+                                    <span class="ccv-toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ccv-settings-group">
+                        <label class="ccv-settings-label">${t('Login Redirect')}</label>
+                        <div class="ccv-defaults-card">
+                            <div class="ccv-defaults-toggle-row">
+                                <div class="ccv-defaults-toggle-info">
+                                    <span class="ccv-defaults-toggle-title">${t('Redirect after login')}</span>
+                                    <span class="ccv-defaults-toggle-desc">${t('Remembers the page you were trying to visit and redirects you there after logging in')}</span>
+                                </div>
+                                <label class="ccv-toggle">
+                                    <input type="checkbox" id="ccv-login-redirect" ${config.loginRedirect ? 'checked' : ''}>
                                     <span class="ccv-toggle-slider"></span>
                                 </label>
                             </div>
@@ -1700,6 +1732,7 @@ const CCVToolbar = (() => {
             if (data.position) config.position = data.position;
             if (typeof data.usesDefaultConfig === 'boolean') config.usesDefaultConfig = data.usesDefaultConfig;
             if (typeof data.autofillLogin === 'boolean') config.autofillLogin = data.autofillLogin;
+            if (typeof data.loginRedirect === 'boolean') config.loginRedirect = data.loginRedirect;
             if (typeof data.loremAutofill === 'boolean') config.loremAutofill = data.loremAutofill;
             if (data.language) config.language = data.language;
             if (data.infoBarPosition) config.infoBarPosition = data.infoBarPosition;
@@ -1727,6 +1760,7 @@ const CCVToolbar = (() => {
             language: config.language,
             infoBarPosition: config.infoBarPosition,
             autofillLogin: config.autofillLogin,
+            loginRedirect: config.loginRedirect,
             loremAutofill: config.loremAutofill
         }, null, 2);
         const blob = new Blob([data], { type: 'application/json' });
@@ -1762,6 +1796,7 @@ const CCVToolbar = (() => {
                     if (data.position) config.position = data.position;
                     if (typeof data.usesDefaultConfig === 'boolean') config.usesDefaultConfig = data.usesDefaultConfig;
                     if (typeof data.autofillLogin === 'boolean') config.autofillLogin = data.autofillLogin;
+                    if (typeof data.loginRedirect === 'boolean') config.loginRedirect = data.loginRedirect;
                     if (typeof data.loremAutofill === 'boolean') config.loremAutofill = data.loremAutofill;
                     if (data.language) config.language = data.language;
                     if (data.infoBarPosition) config.infoBarPosition = data.infoBarPosition;
@@ -2630,8 +2665,26 @@ const CCVToolbar = (() => {
         requestAnimationFrame(constrainPosition);
     };
 
+    const redirectAfterLogin = () => {
+        if (!config.loginRedirect) return;
+
+        const path = window.location.pathname.toLowerCase();
+        if (!path.includes('/onderhoud/') || path.includes('/onderhoud/login.php')) return;
+
+        const redirectUrl = sessionStorage.getItem('ccv-login-redirect-url');
+        if (!redirectUrl) return;
+
+        if (redirectUrl && redirectUrl !== window.location.href) {
+            sessionStorage.removeItem('ccv-login-redirect-url');
+            window.location.replace(redirectUrl);
+        }
+    }
+
     const init = async () => {
         loadConfig();
+        
+        redirectAfterLogin();
+
         autofillLoginFields();
         setupLoremAutofill();
         await loadTranslations(config.language);
@@ -2838,6 +2891,11 @@ const CCVToolbar = (() => {
                 config.autofillLogin = e.target.checked;
                 saveConfig();
                 showToast(config.autofillLogin ? t('Login autofill enabled') : t('Login autofill disabled'));
+            }
+            if (e.target.id === 'ccv-login-redirect') {
+                config.loginRedirect = e.target.checked;
+                saveConfig();
+                showToast(config.loginRedirect ? t('Login redirect enabled') : t('Login redirect disabled'));
             }
             if (e.target.id === 'ccv-lorem-autofill') {
                 config.loremAutofill = e.target.checked;
