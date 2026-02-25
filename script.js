@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.0.9';
+    const VERSION = '2.0.10';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -1667,6 +1667,51 @@ const CCVToolbar = (() => {
         });
     };
 
+    const exportConfigToClipboard = () => {
+        const data = JSON.stringify({
+            domains: config.domains,
+            urls: config.urls,
+            mode: config.mode,
+            color: config.color,
+            compactLayout: config.compactLayout,
+            initialView: config.initialView,
+            webshopThemes: config.webshopThemes,
+            customColors: config.customColors,
+            position: config.position,
+            usesDefaultConfig: config.usesDefaultConfig,
+            language: config.language,
+            infoBarPosition: config.infoBarPosition
+        }, null, 2);
+        navigator.clipboard.writeText(data).then(() => showToast(t('Configuration copied to clipboard')));
+    };
+    
+    const importConfigFromClipboard = async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            const data = JSON.parse(text);
+            if (data.domains) config.domains = data.domains;
+            if (data.urls) config.urls = data.urls;
+            if (data.mode) config.mode = data.mode;
+            if (data.color) config.color = data.color;
+            if (data.compactLayout) config.compactLayout = data.compactLayout;
+            if (data.initialView) config.initialView = data.initialView;
+            if (data.webshopThemes) config.webshopThemes = data.webshopThemes;
+            if (data.customColors) config.customColors = data.customColors;
+            if (data.position) config.position = data.position;
+            if (typeof data.usesDefaultConfig === 'boolean') config.usesDefaultConfig = data.usesDefaultConfig;
+            if (typeof data.autofillLogin === 'boolean') config.autofillLogin = data.autofillLogin;
+            if (typeof data.loremAutofill === 'boolean') config.loremAutofill = data.loremAutofill;
+            if (data.language) config.language = data.language;
+            if (data.infoBarPosition) config.infoBarPosition = data.infoBarPosition;
+            applyTheme();
+            saveConfig();
+            render();
+            showToast(t('Configuration imported from clipboard'));
+        } catch (err) {
+            showToast(t('Invalid configuration in clipboard'));
+        }
+    };
+
     const exportConfig = () => {
         const data = JSON.stringify({
             domains: config.domains,
@@ -2487,10 +2532,16 @@ const CCVToolbar = (() => {
                 if (openUrlItem) openUrlNewTab(openUrlItem.url, window.location.origin);
                 break;
             case 'export':
-                exportConfig();
+                showContextMenu(e, [
+                    { icon: icons.download, label: t('Export to file'), action: () => exportConfig() },
+                    { icon: icons.copy, label: t('Copy to clipboard'), action: () => exportConfigToClipboard() }
+                ]);
                 break;
             case 'import':
-                importConfig();
+                showContextMenu(e, [
+                    { icon: icons.upload, label: t('Import from file'), action: () => importConfig() },
+                    { icon: icons.clipboard, label: t('Paste from clipboard'), action: () => importConfigFromClipboard() }
+                ]);
                 break;
             case 'clear-cookies':
                 clearCookiePreferences();
