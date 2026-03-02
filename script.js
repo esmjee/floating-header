@@ -1,8 +1,9 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.0.11';
+    const VERSION = '2.1.0';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
+    const SCRIPTS_BASE_GITHUB = 'https://raw.githubusercontent.com/esmjee/floating-header/main/scripts/';
     
     const isLoaderPresent = () => window.__CCV_LOADER_PRESENT__ === true;
     
@@ -23,16 +24,27 @@ const CCVToolbar = (() => {
         }
         
         if (window.__CCV_TOOLBAR_LANGUAGES__ && window.__CCV_TOOLBAR_LANGUAGES__[lang]) {
+            const data = window.__CCV_TOOLBAR_LANGUAGES__[lang];
+            if (typeof data === 'object') {
+                translations = data;
+                return;
+            }
             try {
-                translations = JSON.parse(window.__CCV_TOOLBAR_LANGUAGES__[lang]);
+                translations = JSON.parse(data);
                 return;
             } catch (e) {
                 console.warn('Failed to parse cached translations:', e);
             }
         }
+
+        if (window.location.protocol === 'file:') {
+            translations = {};
+            return;
+        }
         
         try {
-            const response = await fetch(`${LANGUAGES_URL}/${lang}.json`);
+            const baseUrl = getLanguagesBaseUrl();
+            const response = await fetch(`${baseUrl}${lang}.json`);
             if (response.ok) {
                 translations = await response.json();
             }
@@ -386,6 +398,324 @@ const CCVToolbar = (() => {
 
     const saveConfig = () => {
         localStorage.setItem('ccv-toolbar-config', JSON.stringify(config));
+    };
+
+    const SCRIPTS_STORAGE_KEY = 'ccv-disabled-scripts';
+    const getDisabledScripts = () => {
+        try {
+            const raw = localStorage.getItem(SCRIPTS_STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            return [];
+        }
+    };
+    const setDisabledScripts = (paths) => {
+        localStorage.setItem(SCRIPTS_STORAGE_KEY, JSON.stringify(paths));
+    };
+    const isScriptDisabled = (path) => getDisabledScripts().includes(path);
+    const setScriptDisabled = (path, disabled) => {
+        let list = getDisabledScripts();
+        if (disabled) {
+            if (!list.includes(path)) list = [...list, path];
+        } else {
+            list = list.filter(p => p !== path);
+        }
+        setDisabledScripts(list);
+    };
+
+    const isDevelopmentEnv = () => {
+        return window.location.protocol === 'file:' ||
+            /^localhost$|^127\.0\.0\.1$|^$/i.test(window.location.hostname) ||
+            window.location.port !== '';
+    };
+
+    const getScriptsBaseUrl = () => {
+        if (isDevelopmentEnv()) {
+            const path = window.location.pathname.replace(/\/[^/]*$/, '/');
+            return window.location.origin + path + 'scripts/';
+        }
+        return SCRIPTS_BASE_GITHUB;
+    };
+
+    const getLanguagesBaseUrl = () => {
+        if (isDevelopmentEnv()) {
+            const path = window.location.pathname.replace(/\/[^/]*$/, '/');
+            return window.location.origin + path + 'languages/';
+        }
+        return LANGUAGES_URL + '/';
+    };
+
+    let scriptsRegistry = null;
+    let scriptsBaseLoaded = false;
+    const loadedScriptInstances = {};
+
+    const loadScriptBase = () => {
+        if (scriptsBaseLoaded || typeof window.CCVScriptBase !== 'undefined') {
+            scriptsBaseLoaded = true;
+            return Promise.resolve();
+        }
+        return new Promise((resolve, reject) => {
+            const baseUrl = getScriptsBaseUrl();
+            const el = document.createElement('script');
+            el.src = baseUrl + 'script-base.js';
+            el.onload = () => { scriptsBaseLoaded = true; resolve(); };
+            el.onerror = () => reject(new Error('Failed to load script-base.js'));
+            (document.head || document.documentElement).appendChild(el);
+        });
+    };
+
+    const SCRIPTS_SETTINGS_STORAGE_KEY = 'ccv-script-settings';
+    const getScriptSettings = (path) => {
+        try {
+            const raw = localStorage.getItem(SCRIPTS_SETTINGS_STORAGE_KEY + ':' + path);
+            return raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            return {};
+        }
+    };
+    const setScriptSettings = (path, settings) => {
+        try {
+            localStorage.setItem(SCRIPTS_SETTINGS_STORAGE_KEY + ':' + path, JSON.stringify(settings));
+        } catch (e) {}
+    };
+
+    const loadScriptByPath = (path) => {
+        if (loadedScriptInstances[path]) return Promise.resolve(loadedScriptInstances[path]);
+        const baseUrl = getScriptsBaseUrl();
+        const scriptUrl = path.startsWith('./') ? baseUrl + path.replace(/^\.\/scripts\//, '') : baseUrl + path;
+        window.__CCV_SCRIPT_CURRENT_PATH__ = path;
+        return new Promise((resolve, reject) => {
+            const el = document.createElement('script');
+            el.src = scriptUrl;
+            el.onload = () => {
+                window.__CCV_SCRIPT_CURRENT_PATH__ = null;
+                const instance = window.__CCV_SCRIPT_INSTANCE__;
+                if (instance) {
+                    loadedScriptInstances[path] = instance;
+                    window.__CCV_SCRIPT_INSTANCE__ = null;
+                }
+                resolve(instance || null);
+            };
+            el.onerror = () => {
+                window.__CCV_SCRIPT_CURRENT_PATH__ = null;
+                reject(new Error('Failed to load ' + path));
+            };
+            (document.head || document.documentElement).appendChild(el);
+        });
+    };
+
+    const getCurrentPathForScriptMatch = () => {
+        const p = window.location.pathname.replace(/^\//, '');
+        const q = window.location.search || '';
+        return p + q;
+    };
+
+    const urlMatchesScript = (registryUrl) => {
+        const current = getCurrentPathForScriptMatch();
+        if (registryUrl === '' || registryUrl === undefined) return true;
+        return current === registryUrl || current.startsWith(registryUrl);
+    };
+
+    const scriptPathMatchesCurrentPage = (path) => {
+        if (!scriptsRegistry) return false;
+        return Object.keys(scriptsRegistry).some(registryUrl => {
+            if (!urlMatchesScript(registryUrl)) return false;
+            const list = scriptsRegistry[registryUrl];
+            return Array.isArray(list) && list.some(entry => entry && entry.path === path);
+        });
+    };
+
+    const runScriptOnEnable = (path) => {
+        loadScriptBase().then(() => loadScriptByPath(path)).then(instance => {
+            if (instance && typeof instance.onEnable === 'function') {
+                console.info('[CCV Scripts] Script running:', path);
+                instance.onEnable();
+            }
+        }).catch(err => console.warn('[CCV Scripts]', err));
+    };
+
+    const runScriptOnDisable = (path) => {
+        const instance = loadedScriptInstances[path];
+        if (instance && typeof instance.onDisable === 'function') {
+            console.info('[CCV Scripts] Script disabled:', path);
+            instance.onDisable();
+        }
+    };
+
+    const REGISTRY_CACHE_KEY = 'ccv-scripts-registry-cache';
+    const getCachedRegistry = () => {
+        try {
+            const raw = localStorage.getItem(REGISTRY_CACHE_KEY);
+            if (!raw) return null;
+            const { version, data } = JSON.parse(raw);
+            if (version !== VERSION || !data || typeof data !== 'object') return null;
+            return data;
+        } catch (e) {
+            return null;
+        }
+    };
+    const setCachedRegistry = (data) => {
+        try {
+            localStorage.setItem(REGISTRY_CACHE_KEY, JSON.stringify({ version: VERSION, data }));
+        } catch (e) {}
+    };
+
+    const loadScriptsRegistry = () => {
+        if (scriptsRegistry) return Promise.resolve(scriptsRegistry);
+        if (window.__CCV_SCRIPT_REGISTRY__) {
+            scriptsRegistry = typeof window.__CCV_SCRIPT_REGISTRY__ === 'object' ? window.__CCV_SCRIPT_REGISTRY__ : {};
+            return Promise.resolve(scriptsRegistry);
+        }
+        if (window.location.protocol === 'file:') {
+            scriptsRegistry = {};
+            return Promise.resolve(scriptsRegistry);
+        }
+        const cached = getCachedRegistry();
+        if (cached) {
+            scriptsRegistry = cached;
+            return Promise.resolve(scriptsRegistry);
+        }
+        const baseUrl = getScriptsBaseUrl();
+        return fetch(baseUrl + 'registry.json', { cache: 'no-store' })
+            .then(r => r.ok ? r.json() : Promise.reject(new Error('Registry fetch failed')))
+            .then(data => {
+                scriptsRegistry = data && typeof data === 'object' ? data : {};
+                setCachedRegistry(scriptsRegistry);
+                return scriptsRegistry;
+            });
+    };
+
+    const runEnabledScriptsForCurrentUrl = () => {
+        if (!scriptsRegistry) return;
+        Object.keys(scriptsRegistry).forEach(registryUrl => {
+            if (!urlMatchesScript(registryUrl)) return;
+            const list = scriptsRegistry[registryUrl];
+            if (!Array.isArray(list)) return;
+            list.forEach(entry => {
+                const path = entry && entry.path;
+                if (!path || isScriptDisabled(path)) return;
+                runScriptOnEnable(path);
+            });
+        });
+    };
+
+    const renderScriptsList = () => {
+        const listEl = elements.toolbar?.querySelector('#ccv-scripts-list');
+        const loadingEl = elements.toolbar?.querySelector('#ccv-scripts-loading');
+        const emptyEl = elements.toolbar?.querySelector('#ccv-scripts-empty');
+        if (!listEl || !loadingEl || !emptyEl) return;
+
+        loadingEl.classList.add('ccv-scripts-hidden');
+        listEl.innerHTML = '';
+
+        if (!scriptsRegistry || Object.keys(scriptsRegistry).length === 0) {
+            emptyEl.classList.remove('ccv-scripts-hidden');
+            return;
+        }
+        emptyEl.classList.add('ccv-scripts-hidden');
+
+        const items = [];
+        Object.keys(scriptsRegistry).forEach(registryUrl => {
+            const list = scriptsRegistry[registryUrl];
+            if (!Array.isArray(list)) return;
+            list.forEach(entry => {
+                if (entry && entry.name && entry.path) {
+                    items.push({
+                        url: registryUrl,
+                        path: entry.path,
+                        name: entry.name,
+                        description: entry.description || ''
+                    });
+                }
+            });
+        });
+
+        items.forEach(item => {
+            const disabled = isScriptDisabled(item.path);
+            const matches = urlMatchesScript(item.url);
+            const row = document.createElement('div');
+            row.className = 'ccv-script-row' + (matches ? ' ccv-script-matches-url' : '');
+            row.dataset.scriptPath = item.path;
+            row.dataset.scriptUrl = item.url;
+            row.dataset.scriptName = item.name;
+            row.innerHTML = `
+                <div class="ccv-script-row-main">
+                    <span class="ccv-script-name">${escapeHtml(item.name)}</span>
+                    ${matches ? '<span class="ccv-script-badge">' + t('This page') + '</span>' : ''}
+                </div>
+                ${item.description ? `<p class="ccv-script-desc-row">${escapeHtml(item.description)}</p>` : ''}
+                <label class="ccv-toggle ccv-script-toggle" onclick="event.stopPropagation()">
+                    <input type="checkbox" ${disabled ? '' : 'checked'} data-script-path="${escapeHtml(item.path)}" data-action="script-toggle">
+                    <span class="ccv-toggle-slider"></span>
+                </label>
+            `;
+            listEl.appendChild(row);
+        });
+    };
+
+    const escapeHtml = (s) => {
+        if (!s) return '';
+        const div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+    };
+
+    const showScriptDetail = (path, scriptName) => {
+        const listView = elements.toolbar?.querySelector('#ccv-scripts-list-view');
+        const detailView = elements.toolbar?.querySelector('#ccv-scripts-detail-view');
+        const detailTitle = elements.toolbar?.querySelector('#ccv-script-detail-title');
+        const detailBody = elements.toolbar?.querySelector('#ccv-script-detail-body');
+        if (!listView || !detailView || !detailTitle || !detailBody) return;
+
+        listView.classList.add('ccv-scripts-hidden');
+        detailView.classList.remove('ccv-scripts-hidden');
+        detailTitle.textContent = scriptName || path;
+        detailBody.dataset.currentScriptPath = path;
+        detailBody.innerHTML = '';
+
+        const disabled = isScriptDisabled(path);
+        detailBody.innerHTML = `
+            <div class="ccv-script-detail-toggle-row">
+                <span class="ccv-script-detail-toggle-label">${t('Enabled')}</span>
+                <label class="ccv-toggle">
+                    <input type="checkbox" id="ccv-script-detail-enabled" ${disabled ? '' : 'checked'} data-script-path="${escapeHtml(path)}" data-action="script-toggle">
+                    <span class="ccv-toggle-slider"></span>
+                </label>
+            </div>
+            <div class="ccv-script-detail-view-content" id="ccv-script-detail-view-content"></div>
+        `;
+
+        loadScriptBase()
+            .then(() => loadScriptByPath(path))
+            .then(instance => {
+                const contentEl = detailBody.querySelector('#ccv-script-detail-view-content');
+                if (contentEl && instance && typeof instance.view === 'function') {
+                    const html = instance.view();
+                    if (html) contentEl.innerHTML = html;
+                }
+            })
+            .catch(() => {});
+    };
+
+    const onScriptsTabOpen = () => {
+        const loadingEl = elements.toolbar?.querySelector('#ccv-scripts-loading');
+        const emptyEl = elements.toolbar?.querySelector('#ccv-scripts-empty');
+        const listEl = elements.toolbar?.querySelector('#ccv-scripts-list');
+        if (loadingEl && !scriptsRegistry) loadingEl.classList.remove('ccv-scripts-hidden');
+        if (emptyEl) emptyEl.classList.add('ccv-scripts-hidden');
+
+        loadScriptsRegistry()
+            .then(() => {
+                renderScriptsList();
+            })
+            .catch(() => {
+                if (loadingEl) loadingEl.classList.add('ccv-scripts-hidden');
+                if (emptyEl) {
+                    emptyEl.classList.remove('ccv-scripts-hidden');
+                    emptyEl.textContent = t('Failed to load registry.');
+                }
+                if (listEl) listEl.innerHTML = '';
+            });
     };
 
     const getSubdomainFromHostname = (hostname) => {
@@ -1072,6 +1402,7 @@ const CCVToolbar = (() => {
             <div class="ccv-tab-container">
                 <button class="ccv-tab active" data-tab="links">${t('Links')}</button>
                 <button class="ccv-tab" data-tab="actions">${t('Actions')}</button>
+                <button class="ccv-tab" data-tab="scripts">${t('Scripts')}</button>
                 <button class="ccv-tab" data-tab="settings">${t('Settings')}</button>
             </div>
             <div class="ccv-content">
@@ -1108,6 +1439,26 @@ const CCVToolbar = (() => {
                             <span>${t('Clear cookie preferences')}</span>
                         </button>
                         <p class="ccv-hint">${t('Removes CCVGoPopUpClicked and cookie_preference to show the cookie modal again.')}</p>
+                    </div>
+                </div>
+                <div class="ccv-tab-content" data-content="scripts">
+                    <div class="ccv-scripts-view" id="ccv-scripts-list-view">
+                        <div class="ccv-section">
+                            <div class="ccv-section-header">
+                                <span class="ccv-section-title">${t('Scripts')}</span>
+                            </div>
+                            <p class="ccv-hint">${t('Page-specific scripts from registry. Toggle to enable or disable.')}</p>
+                            <div class="ccv-scripts-list" id="ccv-scripts-list"></div>
+                            <div class="ccv-scripts-loading ccv-scripts-hidden" id="ccv-scripts-loading">${t('Loading...')}</div>
+                            <div class="ccv-scripts-empty ccv-scripts-hidden" id="ccv-scripts-empty">${t('No scripts in registry.')}</div>
+                        </div>
+                    </div>
+                    <div class="ccv-scripts-detail ccv-scripts-hidden" id="ccv-scripts-detail-view">
+                        <div class="ccv-scripts-detail-header">
+                            <button class="ccv-btn-icon ccv-scripts-back" data-action="scripts-back" data-tooltip="${t('Back')}">${icons.chevronLeft}</button>
+                            <span class="ccv-scripts-detail-title" id="ccv-script-detail-title"></span>
+                        </div>
+                        <div class="ccv-scripts-detail-body" id="ccv-script-detail-body"></div>
                     </div>
                 </div>
                 <div class="ccv-tab-content" data-content="settings">
@@ -2389,6 +2740,7 @@ const CCVToolbar = (() => {
     };
 
     const handleClick = (e) => {
+        if (e.target.closest('.ccv-script-attr-toggles')) return;
         const action = e.target.closest('[data-action]')?.dataset.action;
         const tab = e.target.closest('[data-tab]')?.dataset.tab;
         const domainId = e.target.closest('[data-domain-id]')?.dataset.domainId;
@@ -2404,6 +2756,13 @@ const CCVToolbar = (() => {
         if (tab) {
             elements.toolbar.querySelectorAll('.ccv-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
             elements.toolbar.querySelectorAll('.ccv-tab-content').forEach(c => c.classList.toggle('active', c.dataset.content === tab));
+            if (tab === 'scripts') onScriptsTabOpen();
+            return;
+        }
+
+        const scriptRow = e.target.closest('.ccv-script-row');
+        if (scriptRow && !e.target.closest('.ccv-toggle') && !e.target.closest('[data-action="script-toggle"]')) {
+            showScriptDetail(scriptRow.dataset.scriptPath, scriptRow.dataset.scriptName);
             return;
         }
 
@@ -2459,6 +2818,14 @@ const CCVToolbar = (() => {
         if (domainId && !action && !e.target.closest('.ccv-domain-actions')) {
             const domain = config.domains.find(d => d.id === domainId);
             if (domain) navigateUrl(domain.url);
+            return;
+        }
+
+        if (action === 'scripts-back') {
+            const listView = elements.toolbar?.querySelector('#ccv-scripts-list-view');
+            const detailView = elements.toolbar?.querySelector('#ccv-scripts-detail-view');
+            if (listView) listView.classList.remove('ccv-scripts-hidden');
+            if (detailView) detailView.classList.add('ccv-scripts-hidden');
             return;
         }
 
@@ -2818,6 +3185,9 @@ const CCVToolbar = (() => {
 
         document.body.appendChild(elements.toolbar);
         document.body.appendChild(elements.toggleBtn);
+        window.__CCV_TOOLBAR_SHOW_TOAST__ = showToast;
+
+        loadScriptsRegistry().then(() => runEnabledScriptsForCurrentUrl()).catch(() => {});
 
         applyTheme();
 
@@ -2825,6 +3195,20 @@ const CCVToolbar = (() => {
 
         elements.toolbar.addEventListener('click', handleClick);
         elements.toolbar.addEventListener('change', (e) => {
+            const path = e.target.dataset?.scriptPath;
+            if (path && e.target.getAttribute('data-action') === 'script-toggle') {
+                const enabled = e.target.checked;
+                setScriptDisabled(path, !enabled);
+                if (enabled) {
+                    if (scriptPathMatchesCurrentPage(path)) runScriptOnEnable(path);
+                } else {
+                    runScriptOnDisable(path);
+                }
+                elements.toolbar.querySelectorAll('[data-script-path]').forEach(input => {
+                    if (input.dataset.scriptPath === path && input !== e.target && input.checked !== enabled) input.checked = enabled;
+                });
+                return;
+            }
             if (e.target.id === 'ccv-uses-default-config') {
                 config.usesDefaultConfig = e.target.checked;
                 saveConfig();
@@ -2886,6 +3270,14 @@ const CCVToolbar = (() => {
                     updateDefaultsStatus();
                     showToast(t('Using custom config for this domain'));
                 }
+            }
+            const scriptPath = elements.toolbar?.querySelector('#ccv-script-detail-body')?.dataset?.currentScriptPath;
+            if (scriptPath && e.target.dataset?.scriptSetting !== undefined) {
+                const key = e.target.dataset.scriptSetting;
+                const settings = getScriptSettings(scriptPath);
+                settings[key] = e.target.checked;
+                setScriptSettings(scriptPath, settings);
+                return;
             }
             if (e.target.id === 'ccv-autofill-login') {
                 config.autofillLogin = e.target.checked;

@@ -2090,3 +2090,175 @@
         }
     }
 }
+
+.ccv-scripts-hidden {
+    display: none !important;
+}
+
+#ccv-toolbar .ccv-scripts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+#ccv-toolbar .ccv-script-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 12px;
+    background: var(--ccv-surface);
+    border: 1px solid var(--ccv-border);
+    border-radius: var(--ccv-radius-sm);
+    cursor: pointer;
+    transition: background var(--ccv-transition), border-color var(--ccv-transition), box-shadow var(--ccv-transition);
+}
+
+#ccv-toolbar .ccv-script-row:hover {
+    background: var(--ccv-surface-hover);
+    border-color: var(--ccv-accent);
+}
+
+#ccv-toolbar .ccv-script-row.ccv-script-matches-url {
+    border-color: var(--ccv-accent);
+    box-shadow: 0 0 0 1px var(--ccv-accent-glow);
+}
+
+#ccv-toolbar .ccv-script-row-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+#ccv-toolbar .ccv-script-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--ccv-text);
+}
+
+#ccv-toolbar .ccv-script-badge {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--ccv-accent);
+    color: white;
+}
+
+#ccv-toolbar .ccv-script-desc-row {
+    grid-column: 1;
+    margin: 0;
+    font-size: 11px;
+    color: var(--ccv-text-muted);
+    line-height: 1.35;
+}
+
+#ccv-toolbar .ccv-script-toggle {
+    grid-row: span 2;
+    align-self: center;
+}
+
+#ccv-toolbar .ccv-scripts-loading,
+#ccv-toolbar .ccv-scripts-empty {
+    padding: 16px;
+    text-align: center;
+    color: var(--ccv-text-muted);
+    font-size: 12px;
+}
+
+#ccv-toolbar .ccv-scripts-detail {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+#ccv-toolbar .ccv-scripts-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--ccv-border);
+    flex-shrink: 0;
+}
+
+#ccv-toolbar .ccv-scripts-back {
+    flex-shrink: 0;
+}
+
+#ccv-toolbar .ccv-scripts-detail-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ccv-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#ccv-toolbar .ccv-scripts-detail-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+#ccv-toolbar .ccv-script-detail-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding: 8px 0;
+}
+
+#ccv-toolbar .ccv-script-detail-toggle-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ccv-text);
+}
+
+#ccv-toolbar .ccv-script-settings,
+#ccv-toolbar .ccv-script-detail-view-content {
+    font-size: 12px;
+    color: var(--ccv-text-muted);
+    line-height: 1.45;
+}
+
+#ccv-toolbar .ccv-script-settings .ccv-hint,
+#ccv-toolbar .ccv-script-detail-view-content .ccv-hint {
+    margin-top: 8px;
+    font-size: 11px;
+}
+
+#ccv-toolbar .ccv-script-attr-toggles {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 12px;
+    margin: 12px 0;
+    max-height: 200px;
+    overflow-y: auto;
+    pointer-events: auto;
+}
+
+#ccv-toolbar .ccv-script-attr-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--ccv-text);
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+#ccv-toolbar .ccv-script-attr-toggle input {
+    margin: 0;
+    flex-shrink: 0;
+    pointer-events: auto;
+    appearance: auto;
+    -webkit-appearance: checkbox;
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+}

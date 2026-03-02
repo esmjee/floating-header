@@ -1,0 +1,9 @@
+{
+  "onderhoud/AdminItems/ProductOptions/AddProductOption.php": [
+    {
+      "name": "Add product option attributes",
+      "description": "Injects controls to add or reload generated attribute sets (colors, sizes, materials, etc.) on the Add Product Option page.",
+      "path": "./scripts/page-scripts/add-product-option-attributes.js"
+    }
+  ]
+}

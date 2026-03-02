@@ -3,6 +3,7 @@
     "Compact view": "Compacte weergave",
     "Links": "Links",
     "Actions": "Acties",
+    "Scripts": "Scripts",
     "Settings": "Instellingen",
     "Quick Links": "Snelle Links",
     "Add URL": "URL toevoegen",
@@ -152,6 +153,14 @@
     "Autofill login fields": "Login velden automatisch invullen",
     "Auto-fills username (subdomain) and password (demo) on /onderhoud/Login.php": "Vult automatisch gebruikersnaam (subdomein) en wachtwoord (demo) in op /onderhoud/Login.php",
     "Login autofill enabled": "Login autofill ingeschakeld",
-    "Login autofill disabled": "Login autofill uitgeschakeld"
+    "Login autofill disabled": "Login autofill uitgeschakeld",
+
+    "Back": "Terug",
+    "This page": "Deze pagina",
+    "Enabled": "Ingeschakeld",
+    "Loading...": "Laden...",
+    "No scripts in registry.": "Geen scripts in het register.",
+    "Failed to load registry.": "Register laden mislukt.",
+    "Page-specific scripts from registry. Toggle to enable or disable.": "Pagina-specifieke scripts uit het register. Schakel in of uit."
 }
 

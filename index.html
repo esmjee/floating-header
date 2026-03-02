@@ -3,11 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>CCV Header - Development</title>
     <link rel="stylesheet" href="style.css">
-    <script src="script.js" defer></script>
+    <!-- Development: load translations and script registry from local files (no fetch/CORS) -->
+    <script src="scripts/registry.js"></script>
+    <script src="scripts/script-base.js"></script>
 </head>
 <body>
-    <!-- DO NOT PUT CODE IN HERE -->
+    <script src="script.js" defer></script>
+    <script defer>
+        if (window.CCVToolbar && typeof window.CCVToolbar.init === 'function') {
+            window.CCVToolbar.init();
+        }
+    </script>
 </body>
 </html>
