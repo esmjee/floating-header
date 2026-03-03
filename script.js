@@ -454,14 +454,15 @@ const CCVToolbar = (() => {
             scriptsBaseLoaded = true;
             return Promise.resolve();
         }
-        return new Promise((resolve, reject) => {
-            const baseUrl = getScriptsBaseUrl();
-            const el = document.createElement('script');
-            el.src = baseUrl + 'script-base.js';
-            el.onload = () => { scriptsBaseLoaded = true; resolve(); };
-            el.onerror = () => reject(new Error('Failed to load script-base.js'));
-            (document.head || document.documentElement).appendChild(el);
-        });
+        const baseUrl = getScriptsBaseUrl();
+        return fetch(baseUrl + 'script-base.js', { cache: 'default' })
+            .then(r => { if (!r.ok) throw new Error('Failed to load script-base.js'); return r.text(); })
+            .then((code) => {
+                const el = document.createElement('script');
+                el.textContent = code;
+                (document.head || document.documentElement).appendChild(el);
+                scriptsBaseLoaded = true;
+            });
     };
 
     const SCRIPTS_SETTINGS_STORAGE_KEY = 'ccv-script-settings';
@@ -484,24 +485,24 @@ const CCVToolbar = (() => {
         const baseUrl = getScriptsBaseUrl();
         const scriptUrl = path.startsWith('./') ? baseUrl + path.replace(/^\.\/scripts\//, '') : baseUrl + path;
         window.__CCV_SCRIPT_CURRENT_PATH__ = path;
-        return new Promise((resolve, reject) => {
-            const el = document.createElement('script');
-            el.src = scriptUrl;
-            el.onload = () => {
+        return fetch(scriptUrl, { cache: 'default' })
+            .then(r => { if (!r.ok) throw new Error('Failed to load ' + path); return r.text(); })
+            .then((code) => {
+                const el = document.createElement('script');
+                el.textContent = code;
+                (document.head || document.documentElement).appendChild(el);
                 window.__CCV_SCRIPT_CURRENT_PATH__ = null;
                 const instance = window.__CCV_SCRIPT_INSTANCE__;
                 if (instance) {
                     loadedScriptInstances[path] = instance;
                     window.__CCV_SCRIPT_INSTANCE__ = null;
                 }
-                resolve(instance || null);
-            };
-            el.onerror = () => {
+                return instance || null;
+            })
+            .catch((err) => {
                 window.__CCV_SCRIPT_CURRENT_PATH__ = null;
-                reject(new Error('Failed to load ' + path));
-            };
-            (document.head || document.documentElement).appendChild(el);
-        });
+                throw err;
+            });
     };
 
     const getCurrentPathForScriptMatch = () => {
