@@ -36,7 +36,73 @@ class AddProductOptionAttributesScript extends CCVScriptBase {
         return all.filter(key => settings[key] !== false);
     }
 
+    styles() {
+        return `
+.custom-form-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 1rem;
+  justify-content: end;
+}
+.custom-input {
+  width: 80px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  font-size: 14px;
+}
+.custom-input:focus {
+  outline: none;
+  border-color: #2563EB;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+}
+.custom-button {
+  padding: 8px 16px;
+  background-color: #2563EB;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.custom-button:hover {
+  background-color: #1E40AF;
+}
+.custom-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
+}
+.retry-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #2563EB;
+  border: none;
+  border-radius: 6px;
+  padding: 8px;
+  cursor: pointer;
+}
+.retry-icon {
+  width: 20px;
+  height: 20px;
+  stroke: white;
+  display: block;
+}
+.retry-button:hover {
+  background-color: #1E40AF;
+}
+.retry-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
+}
+`.trim();
+    }
+
     onEnable() {
+        super.onEnable();
         this._injectedRoot = this._runScript();
     }
 
@@ -45,6 +111,7 @@ class AddProductOptionAttributesScript extends CCVScriptBase {
             this._injectedRoot.remove();
             this._injectedRoot = null;
         }
+        super.onDisable();
     }
 
     _runScript() {
