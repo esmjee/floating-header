@@ -161,6 +161,10 @@
     "Loading...": "Laden...",
     "No scripts in registry.": "Geen scripts in het register.",
     "Failed to load registry.": "Register laden mislukt.",
-    "Page-specific scripts from registry. Toggle to enable or disable.": "Pagina-specifieke scripts uit het register. Schakel in of uit."
+    "Page-specific scripts from registry. Toggle to enable or disable.": "Pagina-specifieke scripts uit het register. Schakel in of uit.",
+
+    "Top": "Bovenkant",
+    "Center": "Midden",
+    "Bottom": "Onderkant"
 }
 
