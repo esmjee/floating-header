@@ -1,10 +1,10 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.41';
+    const VERSION = '2.1.42';
 
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
-    const SCRIPTS_BASE_GITHUB = 'https://raw.githubusercontent.com/esmjee/floating-header/main/plugins/';
+    const SCRIPTS_BASE_GITHUB = 'https://raw.githubusercontent.com/esmjee/floating-header/main/';
     
     const isLoaderPresent = () => window.__CCV_LOADER_PRESENT__ === true;
     
