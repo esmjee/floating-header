@@ -4,7 +4,7 @@ const CCVToolbar = (() => {
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
-    const SCRIPTS_BASE_GITHUB = 'https://raw.githubusercontent.com/esmjee/floating-header/main/';
+    const SCRIPTS_BASE_GITHUB = 'https://raw.githubusercontent.com/esmjee/floating-header/main/plugins/scripts/';
     
     const isLoaderPresent = () => window.__CCV_LOADER_PRESENT__ === true;
     
@@ -485,7 +485,7 @@ const CCVToolbar = (() => {
     const loadScriptByPath = (path) => {
         if (loadedScriptInstances[path]) return Promise.resolve(loadedScriptInstances[path]);
         const baseUrl = getScriptsBaseUrl();
-        const scriptUrl = path.startsWith('./') ? baseUrl + path.replace(/^\.\/(?:scripts\/page-scripts\/|plugins\/scripts\/)/, '') : baseUrl + path;
+        const scriptUrl = path.startsWith('./') ? baseUrl + path.replace(/^\.\/(?:plugins\/)/, '') : baseUrl + path;
         window.__CCV_SCRIPT_CURRENT_PATH__ = path;
         return fetch(scriptUrl, { cache: 'default' })
             .then(r => { if (!r.ok) throw new Error('Failed to load ' + path); return r.text(); })
