@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.2';
+    const VERSION = '2.1.3';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -548,16 +548,17 @@ const CCVToolbar = (() => {
         try {
             const raw = localStorage.getItem(REGISTRY_CACHE_KEY);
             if (!raw) return null;
-            const { version, data } = JSON.parse(raw);
-            if (version !== VERSION || !data || typeof data !== 'object') return null;
-            return data;
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object') return null;
+            if (parsed.data !== undefined) return parsed.data;
+            return parsed;
         } catch (e) {
             return null;
         }
     };
     const setCachedRegistry = (data) => {
         try {
-            localStorage.setItem(REGISTRY_CACHE_KEY, JSON.stringify({ version: VERSION, data }));
+            localStorage.setItem(REGISTRY_CACHE_KEY, JSON.stringify(data));
         } catch (e) {}
     };
 
@@ -625,7 +626,8 @@ const CCVToolbar = (() => {
                         url: registryUrl,
                         path: entry.path,
                         name: entry.name,
-                        description: entry.description || ''
+                        description: entry.description || '',
+                        icon: entry.icon || 'code'
                     });
                 }
             });
@@ -634,15 +636,19 @@ const CCVToolbar = (() => {
         items.forEach(item => {
             const disabled = isScriptDisabled(item.path);
             const matches = urlMatchesScript(item.url);
+            const scriptPageUrl = getScriptPageUrl(item.url);
             const row = document.createElement('div');
             row.className = 'ccv-script-row' + (matches ? ' ccv-script-matches-url' : '');
             row.dataset.scriptPath = item.path;
             row.dataset.scriptUrl = item.url;
             row.dataset.scriptName = item.name;
+            const scriptIcon = icons[item.icon] || icons.code;
             row.innerHTML = `
                 <div class="ccv-script-row-main">
+                    <span class="ccv-script-list-icon">${scriptIcon}</span>
                     <span class="ccv-script-name">${escapeHtml(item.name)}</span>
                     ${matches ? '<span class="ccv-script-badge">' + t('This page') + '</span>' : ''}
+                    ${scriptPageUrl ? `<a href="${escapeHtml(scriptPageUrl)}" target="_blank" rel="noopener noreferrer" class="ccv-script-open-link" data-tooltip="${t('Open in new tab')}" onclick="event.stopPropagation()">${icons.externalLink}</a>` : ''}
                 </div>
                 ${item.description ? `<p class="ccv-script-desc-row">${escapeHtml(item.description)}</p>` : ''}
                 <label class="ccv-toggle ccv-script-toggle" onclick="event.stopPropagation()">
@@ -661,7 +667,13 @@ const CCVToolbar = (() => {
         return div.innerHTML;
     };
 
-    const showScriptDetail = (path, scriptName) => {
+    const getScriptPageUrl = (registryUrl) => {
+        if (!registryUrl) return '';
+        const clean = String(registryUrl).replace(/^\.\/+/, '').replace(/^\//, '');
+        return window.location.origin + (clean ? '/' + clean : '');
+    };
+
+    const showScriptDetail = (path, scriptName, runUrl) => {
         const listView = elements.toolbar?.querySelector('#ccv-scripts-list-view');
         const detailView = elements.toolbar?.querySelector('#ccv-scripts-detail-view');
         const detailTitle = elements.toolbar?.querySelector('#ccv-script-detail-title');
@@ -672,6 +684,17 @@ const CCVToolbar = (() => {
         detailView.classList.remove('ccv-scripts-hidden');
         detailTitle.textContent = scriptName || path;
         detailBody.dataset.currentScriptPath = path;
+        const detailOpenLink = detailView.querySelector('#ccv-script-detail-open-link');
+        if (detailOpenLink) {
+            const scriptPageUrl = getScriptPageUrl(runUrl);
+            if (scriptPageUrl) {
+                detailOpenLink.href = scriptPageUrl;
+                detailOpenLink.style.display = '';
+            } else {
+                detailOpenLink.href = '#';
+                detailOpenLink.style.display = 'none';
+            }
+        }
         detailBody.innerHTML = '';
 
         const disabled = isScriptDisabled(path);
@@ -1468,6 +1491,7 @@ const CCVToolbar = (() => {
                         <div class="ccv-scripts-detail-header">
                             <button class="ccv-btn-icon ccv-scripts-back" data-action="scripts-back" data-tooltip="${t('Back')}">${icons.chevronLeft}</button>
                             <span class="ccv-scripts-detail-title" id="ccv-script-detail-title"></span>
+                            <a href="#" class="ccv-btn-icon ccv-script-open-link" id="ccv-script-detail-open-link" target="_blank" rel="noopener noreferrer" data-tooltip="${t('Open in new tab')}" style="display: none;">${icons.externalLink}</a>
                         </div>
                         <div class="ccv-scripts-detail-body" id="ccv-script-detail-body"></div>
                     </div>
@@ -2772,8 +2796,8 @@ const CCVToolbar = (() => {
         }
 
         const scriptRow = e.target.closest('.ccv-script-row');
-        if (scriptRow && !e.target.closest('.ccv-toggle') && !e.target.closest('[data-action="script-toggle"]')) {
-            showScriptDetail(scriptRow.dataset.scriptPath, scriptRow.dataset.scriptName);
+        if (scriptRow && !e.target.closest('.ccv-toggle') && !e.target.closest('[data-action="script-toggle"]') && !e.target.closest('.ccv-script-open-link')) {
+            showScriptDetail(scriptRow.dataset.scriptPath, scriptRow.dataset.scriptName, scriptRow.dataset.scriptUrl);
             return;
         }
 
