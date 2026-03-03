@@ -1,6 +1,6 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.4';
-    
+    const VERSION = '2.1.41';
+
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -446,6 +446,7 @@ const CCVToolbar = (() => {
 
     let scriptsRegistry = null;
     let scriptsBaseLoaded = false;
+    let scriptBaseLoadPromise = null;
     const loadedScriptInstances = {};
 
     const loadScriptBase = () => {
@@ -453,8 +454,9 @@ const CCVToolbar = (() => {
             scriptsBaseLoaded = true;
             return Promise.resolve();
         }
+        if (scriptBaseLoadPromise) return scriptBaseLoadPromise;
         const baseUrl = getScriptsBaseUrl();
-        return fetch(baseUrl + 'script-base.js', { cache: 'default' })
+        scriptBaseLoadPromise = fetch(baseUrl + 'script-base.js', { cache: 'default' })
             .then(r => { if (!r.ok) throw new Error('Failed to load script-base.js'); return r.text(); })
             .then((code) => {
                 const el = document.createElement('script');
@@ -462,6 +464,7 @@ const CCVToolbar = (() => {
                 (document.head || document.documentElement).appendChild(el);
                 scriptsBaseLoaded = true;
             });
+        return scriptBaseLoadPromise;
     };
 
     const SCRIPTS_SETTINGS_STORAGE_KEY = 'ccv-script-settings';
@@ -482,7 +485,7 @@ const CCVToolbar = (() => {
     const loadScriptByPath = (path) => {
         if (loadedScriptInstances[path]) return Promise.resolve(loadedScriptInstances[path]);
         const baseUrl = getScriptsBaseUrl();
-        const scriptUrl = path.startsWith('./') ? baseUrl + path.replace(/^\.\/scripts\//, '') : baseUrl + path;
+        const scriptUrl = path.startsWith('./') ? baseUrl + path.replace(/^\.\/(?:scripts\/page-scripts\/|plugins\/scripts\/)/, '') : baseUrl + path;
         window.__CCV_SCRIPT_CURRENT_PATH__ = path;
         return fetch(scriptUrl, { cache: 'default' })
             .then(r => { if (!r.ok) throw new Error('Failed to load ' + path); return r.text(); })
