@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.1';
+    const VERSION = '2.1.2';
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
     const LANGUAGES_URL = 'https://raw.githubusercontent.com/esmjee/floating-header/main/languages';
@@ -924,6 +924,16 @@ const CCVToolbar = (() => {
                 shopId = match[1];
                 break;
             }
+        }
+
+        if (!shopId) {
+            const dropdownElements = document.querySelectorAll('.topbar-dropdown-title');
+            dropdownElements.forEach((element) => {
+                if (element.textContent.includes('site')) {
+                    const websiteId = element.nextElementSibling.textContent.trim();
+                    shopId = websiteId;
+                }
+            });
         }
         
         const nodeScript = document.querySelector('script[type="text/node-info"]');

@@ -42,13 +42,14 @@ class AddProductOptionAttributesScript extends CCVScriptBase {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 1rem;
+  margin-left: 1rem;
   justify-content: end;
 }
 .custom-input {
   width: 80px;
   padding: 8px 12px;
   border: 1px solid #ccc;
+  height: 100%;
   border-radius: 6px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   font-size: 14px;
@@ -63,6 +64,7 @@ class AddProductOptionAttributesScript extends CCVScriptBase {
   background-color: #2563EB;
   color: white;
   border: none;
+  height: 100%;
   border-radius: 6px;
   font-size: 14px;
   cursor: pointer;
