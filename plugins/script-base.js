@@ -1,5 +1,5 @@
 /**
- * Base class for CCV Header scripts.
+ * Base class for CCVShop Header scripts.
  * Scripts in ./scripts/ should extend this and export a class that implements:
  * - constructor() — can set this.enabled (default true)
  * - onEnable() — called when script is loaded or toggled on

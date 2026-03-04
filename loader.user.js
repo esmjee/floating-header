@@ -32,7 +32,7 @@
         try {
             localStorage.setItem(CONFIG.CACHE_KEY, JSON.stringify(data));
         } catch (e) {
-            console.warn('[CCV Loader] Failed to cache:', e);
+            console.warn('[CCVShop Loader] Failed to cache:', e);
         }
     };
 
@@ -48,7 +48,7 @@
             try {
                 languages[lang] = await fetchFile(`${CONFIG.GITHUB_BASE}/languages/${lang}.json`);
             } catch (e) {
-                console.warn(`[CCV Loader] Failed to fetch language ${lang}`);
+                console.warn(`[CCVShop Loader] Failed to fetch language ${lang}`);
             }
         }
         return languages;
@@ -109,7 +109,7 @@
                 cache = await fetchAllFiles();
                 setCache(cache);
             } catch (error) {
-                console.error('[CCV Loader] Failed to fetch files:', error);
+                console.error('[CCVShop Loader] Failed to fetch files:', error);
                 return;
             }
         }

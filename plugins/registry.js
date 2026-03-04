@@ -1,4 +1,4 @@
-/* CCV Toolbar – Script registry (loaded by index.html in development) */
+/* CCVShop Toolbar – Script registry (loaded by index.html in development) */
 (function () {
     window.__CCV_SCRIPT_REGISTRY__ = {
         "onderhoud/AdminItems/ProductOptions/AddProductOption.php": [

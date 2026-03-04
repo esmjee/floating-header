@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.6';
+    const VERSION = '2.1.7';
 
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
@@ -65,6 +65,8 @@ const CCVToolbar = (() => {
         expanded: true,
         initialView: 'compact',
         compactLayout: 'default',
+        compactAlign: 'left',
+        minimizedClickBehavior: 'previous',
         customColors: [],
         usesDefaultConfig: true,
         language: 'en',
@@ -124,6 +126,7 @@ const CCVToolbar = (() => {
     let config = { ...defaultConfig };
     let isDragging = false;
     let dragOffset = { x: 0, y: 0 };
+    let lastExpandedBeforeMinimize = null;
     let elements = {};
 
     const icons = {
@@ -531,16 +534,16 @@ const CCVToolbar = (() => {
     const runScriptOnEnable = (path) => {
         loadScriptBase().then(() => loadScriptByPath(path)).then(instance => {
             if (instance && typeof instance.onEnable === 'function') {
-                console.info('[CCV Scripts] Script running:', path);
+                console.info('[CCVShop Scripts] Script running:', path);
                 instance.onEnable();
             }
-        }).catch(err => console.warn('[CCV Scripts]', err));
+        }).catch(err => console.warn('[CCVShop Scripts]', err));
     };
 
     const runScriptOnDisable = (path) => {
         const instance = loadedScriptInstances[path];
         if (instance && typeof instance.onDisable === 'function') {
-            console.info('[CCV Scripts] Script disabled:', path);
+            console.info('[CCVShop Scripts] Script disabled:', path);
             instance.onDisable();
         }
     };
@@ -1334,18 +1337,40 @@ const CCVToolbar = (() => {
                 <div class="ccv-tab-content" data-content="settings">
                     <div class="ccv-settings-group">
                         <label class="ccv-settings-label">${t('Theme')}</label>
+                        <span class="ccv-hint">${t('Choose the overall look of the toolbar.')}</span>
                         <div class="ccv-theme-grid" style="grid-template-columns: repeat(2, 1fr);" id="ccv-mode-grid"></div>
                     </div>
                     <div class="ccv-settings-group">
                         <label class="ccv-settings-label">${t('Color')}</label>
+                        <span class="ccv-hint">${t('Pick the accent color used for buttons and highlights.')}</span>
                         <div class="ccv-theme-grid" id="ccv-color-grid"></div>
                     </div>
                     <div class="ccv-settings-group">
                         <label class="ccv-settings-label">${t('Compact Layout')}</label>
+                        <span class="ccv-hint">${t('Choose how the compact toolbar layout looks.')}</span>
                         <div class="ccv-theme-grid" style="grid-template-columns: repeat(4, 1fr);" id="ccv-layout-grid"></div>
                     </div>
                     <div class="ccv-settings-group">
+                        <label class="ccv-settings-label">${t('Language')}</label>
+                        <span class="ccv-hint">${t('Change the language used in the toolbar interface.')}</span>
+                        <div class="ccv-theme-grid" style="grid-template-columns: repeat(2, 1fr);">
+                            <div class="ccv-theme-option ccv-language-option ${config.language === 'en' ? 'active' : ''}" data-language="en">
+                                <div class="preview ccv-flag-preview">
+                                    <img src="https://flagcdn.com/w40/us.png" alt="US" style="width: 100%; height: 100%; object-fit: cover;">
+                                </div>
+                                <span class="name">English</span>
+                            </div>
+                            <div class="ccv-theme-option ccv-language-option ${config.language === 'nl' ? 'active' : ''}" data-language="nl">
+                                <div class="preview ccv-flag-preview">
+                                    <img src="https://flagcdn.com/w40/nl.png" alt="NL" style="width: 100%; height: 100%; object-fit: cover;">
+                                </div>
+                                <span class="name">Nederlands</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ccv-settings-group">
                         <label class="ccv-settings-label">${t('Initial State')}</label>
+                        <span class="ccv-hint">${t('Select which state the toolbar should use when the page loads.')}</span>
                         <div class="ccv-theme-grid" style="grid-template-columns: repeat(3, 1fr);">
                             <div class="ccv-theme-option ${config.initialView === 'hidden' ? 'active' : ''}" data-initial-view="hidden">
                                 <div class="preview" style="background: var(--ccv-surface-hover);">${icons.close}</div>
@@ -1362,19 +1387,34 @@ const CCVToolbar = (() => {
                         </div>
                     </div>
                     <div class="ccv-settings-group">
-                        <label class="ccv-settings-label">${t('Language')}</label>
-                        <div class="ccv-theme-grid" style="grid-template-columns: repeat(2, 1fr);">
-                            <div class="ccv-theme-option ccv-language-option ${config.language === 'en' ? 'active' : ''}" data-language="en">
-                                <div class="preview ccv-flag-preview">
-                                    <img src="https://flagcdn.com/w40/us.png" alt="US" style="width: 100%; height: 100%; object-fit: cover;">
-                                </div>
-                                <span class="name">English</span>
+                        <label class="ccv-settings-label">${t('Minimized click behavior')}</label>
+                        <span class="ccv-hint">${t('Choose what should open when you click the minimized header.')}</span>
+                        <div class="ccv-theme-grid" style="grid-template-columns: repeat(3, 1fr);">
+                            <div class="ccv-theme-option ccv-minimized-behavior-option ${config.minimizedClickBehavior === 'previous' ? 'active' : ''}" data-minimized-behavior="previous">
+                                <div class="preview" style="background: var(--ccv-surface-hover);">${icons.clock}</div>
+                                <span class="name">${t('Previous')}</span>
                             </div>
-                            <div class="ccv-theme-option ccv-language-option ${config.language === 'nl' ? 'active' : ''}" data-language="nl">
-                                <div class="preview ccv-flag-preview">
-                                    <img src="https://flagcdn.com/w40/nl.png" alt="NL" style="width: 100%; height: 100%; object-fit: cover;">
-                                </div>
-                                <span class="name">Nederlands</span>
+                            <div class="ccv-theme-option ccv-minimized-behavior-option ${config.minimizedClickBehavior === 'expanded' ? 'active' : ''}" data-minimized-behavior="expanded">
+                                <div class="preview" style="background: var(--ccv-accent);">${icons.expand}</div>
+                                <span class="name">${t('Expanded')}</span>
+                            </div>
+                            <div class="ccv-theme-option ccv-minimized-behavior-option ${config.minimizedClickBehavior === 'compact' ? 'active' : ''}" data-minimized-behavior="compact">
+                                <div class="preview" style="background: var(--ccv-accent);">${icons.collapse}</div>
+                                <span class="name">${t('Compact')}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ccv-settings-group">
+                        <label class="ccv-settings-label">${t('Compact Alignment')}</label>
+                        <span class="ccv-hint">${t('Align the compact header relative to the expanded header. This only applies when the header is not placed directly on the left or right side of the screen.')}</span>
+                        <div class="ccv-theme-grid" style="grid-template-columns: repeat(2, 1fr);">
+                            <div class="ccv-theme-option ccv-compact-align-option ${config.compactAlign === 'left' ? 'active' : ''}" data-compact-align="left">
+                                <div class="preview" style="background: var(--ccv-surface-hover); text-align: left;">${icons.layout}</div>
+                                <span class="name">${t('Left')}</span>
+                            </div>
+                            <div class="ccv-theme-option ccv-compact-align-option ${config.compactAlign === 'right' ? 'active' : ''}" data-compact-align="right">
+                                <div class="preview" style="background: var(--ccv-surface-hover); text-align: right; transform: scaleX(-1);">${icons.layout}</div>
+                                <span class="name">${t('Right')}</span>
                             </div>
                         </div>
                     </div>
@@ -1395,11 +1435,13 @@ const CCVToolbar = (() => {
                     </div>
                     <div class="ccv-settings-group">
                         <label class="ccv-settings-label">${t('Updates')}</label>
+                        <span class="ccv-hint">${t('Manage and check for new versions of this toolbar.')}</span>
                         <span class="ccv-hint">${t('Current version')}: v${VERSION}</span>
                         <button class="ccv-btn ccv-btn-primary" data-action="check-updates" style="margin-top: 8px; width: 100%; justify-content: center;">${icons.refresh}<span>${t('Check for Updates')}</span></button>
                     </div>
                     <div class="ccv-settings-group">
                         <label class="ccv-settings-label">${t('Cross-Domain Defaults')}</label>
+                        <span class="ccv-hint">${t('Share layout and toolbar settings between all your domains.')}</span>
                         <div class="ccv-defaults-card">
                             <div class="ccv-defaults-toggle-row">
                                 <div class="ccv-defaults-toggle-info">
@@ -1426,6 +1468,7 @@ const CCVToolbar = (() => {
                     </div>
                     <div class="ccv-settings-group">
                         <label class="ccv-settings-label">${t('Data')}</label>
+                        <span class="ccv-hint">${t('Export or import all toolbar configuration as JSON.')}</span>
                         <div class="ccv-btn-group">
                             <button class="ccv-btn" data-action="export">${icons.download}<span>${t('Export')}</span></button>
                             <button class="ccv-btn" data-action="import">${icons.upload}<span>${t('Import')}</span></button>
@@ -1897,7 +1940,9 @@ const CCVToolbar = (() => {
             mode: config.mode,
             color: config.color,
             compactLayout: config.compactLayout,
+            compactAlign: config.compactAlign,
             initialView: config.initialView,
+            minimizedClickBehavior: config.minimizedClickBehavior,
             webshopThemes: config.webshopThemes,
             customColors: config.customColors,
             position: config.position,
@@ -1917,7 +1962,9 @@ const CCVToolbar = (() => {
             if (data.mode) config.mode = data.mode;
             if (data.color) config.color = data.color;
             if (data.compactLayout) config.compactLayout = data.compactLayout;
+            if (data.compactAlign) config.compactAlign = data.compactAlign;
             if (data.initialView) config.initialView = data.initialView;
+            if (data.minimizedClickBehavior) config.minimizedClickBehavior = data.minimizedClickBehavior;
             if (data.webshopThemes) config.webshopThemes = data.webshopThemes;
             if (data.customColors) config.customColors = data.customColors;
             if (data.position) config.position = data.position;
@@ -1941,7 +1988,9 @@ const CCVToolbar = (() => {
             mode: config.mode,
             color: config.color,
             compactLayout: config.compactLayout,
+            compactAlign: config.compactAlign,
             initialView: config.initialView,
+            minimizedClickBehavior: config.minimizedClickBehavior,
             webshopThemes: config.webshopThemes,
             customColors: config.customColors,
             position: config.position,
@@ -1982,6 +2031,10 @@ const CCVToolbar = (() => {
                     if (data.customColors) config.customColors = data.customColors;
                     if (data.position) config.position = data.position;
                     if (typeof data.usesDefaultConfig === 'boolean') config.usesDefaultConfig = data.usesDefaultConfig;
+                    if (data.compactLayout) config.compactLayout = data.compactLayout;
+                    if (data.compactAlign) config.compactAlign = data.compactAlign;
+                    if (data.initialView) config.initialView = data.initialView;
+                    if (data.minimizedClickBehavior) config.minimizedClickBehavior = data.minimizedClickBehavior;
                     if (typeof data.loginRedirect === 'boolean') config.loginRedirect = data.loginRedirect;
                     if (data.language) config.language = data.language;
                     if (data.infoBarPosition) config.infoBarPosition = data.infoBarPosition;
@@ -2625,6 +2678,21 @@ const CCVToolbar = (() => {
                 elements.toolbar.querySelectorAll('[data-initial-view]').forEach(o => o.classList.toggle('active', o.dataset.initialView === themeOption.dataset.initialView));
                 return;
             }
+            if (themeOption.dataset.compactAlign) {
+                config.compactAlign = themeOption.dataset.compactAlign;
+                detachFromDefaults();
+                saveConfig();
+                elements.toolbar.querySelectorAll('[data-compact-align]').forEach(o => o.classList.toggle('active', o.dataset.compactAlign === themeOption.dataset.compactAlign));
+                render();
+                return;
+            }
+            if (themeOption.dataset.minimizedBehavior) {
+                config.minimizedClickBehavior = themeOption.dataset.minimizedBehavior;
+                detachFromDefaults();
+                saveConfig();
+                elements.toolbar.querySelectorAll('[data-minimized-behavior]').forEach(o => o.classList.toggle('active', o.dataset.minimizedBehavior === themeOption.dataset.minimizedBehavior));
+                return;
+            }
             if (themeOption.dataset.language) {
                 const newLang = themeOption.dataset.language;
                 if (newLang !== config.language) {
@@ -2675,6 +2743,7 @@ const CCVToolbar = (() => {
                 render();
                 break;
             case 'minimize':
+                lastExpandedBeforeMinimize = config.expanded;
                 config.visible = false;
                 saveConfig();
                 elements.toolbar.classList.add('hidden');
@@ -2682,7 +2751,13 @@ const CCVToolbar = (() => {
                 break;
             case 'show':
                 config.visible = true;
-                config.expanded = config.initialView !== 'compact';
+                if (config.minimizedClickBehavior === 'expanded') {
+                    config.expanded = true;
+                } else if (config.minimizedClickBehavior === 'compact') {
+                    config.expanded = false;
+                } else {
+                    config.expanded = lastExpandedBeforeMinimize !== null ? lastExpandedBeforeMinimize : (config.initialView !== 'compact');
+                }
                 saveConfig();
                 elements.toolbar.classList.remove('hidden');
                 render();
@@ -2842,10 +2917,13 @@ const CCVToolbar = (() => {
         const existingPanel = elements.toolbar.querySelector('.ccv-panel');
         if (existingPanel) existingPanel.remove();
 
-        elements.toolbar.classList.remove('ccv-compact', 'ccv-compact-default', 'ccv-compact-circles', 'ccv-compact-horizontal', 'ccv-compact-minimal');
+        elements.toolbar.classList.remove('ccv-compact', 'ccv-compact-default', 'ccv-compact-circles', 'ccv-compact-horizontal', 'ccv-compact-minimal', 'ccv-compact-align-right');
         
         if (!config.expanded) {
             elements.toolbar.classList.add('ccv-compact', `ccv-compact-${config.compactLayout}`);
+            if (config.compactAlign === 'right') {
+                elements.toolbar.classList.add('ccv-compact-align-right');
+            }
         }
 
         const panel = config.expanded ? createExpandedPanel() : createCompactPanel();

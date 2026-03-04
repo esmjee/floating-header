@@ -1,5 +1,5 @@
 {
-    "CCV Dev Tools": "CCV Dev Tools",
+    "CCVShop Dev Tools": "CCVShop Dev Tools",
     "Compact view": "Compacte weergave",
     "Links": "Links",
     "Actions": "Acties",
@@ -15,10 +15,14 @@
     "Clear cookie preferences": "Cookie voorkeuren wissen",
     "Removes CCVGoPopUpClicked and cookie_preference to show the cookie modal again.": "Verwijdert CCVGoPopUpClicked en cookie_preference om de cookie modal opnieuw te tonen.",
     "Theme": "Thema",
+    "Choose the overall look of the toolbar.": "Kies de algemene uitstraling van de toolbar.",
     "Color": "Kleur",
+    "Pick the accent color used for buttons and highlights.": "Kies de accentkleur voor knoppen en highlights.",
     "Presets": "Voorinstellingen",
     "Compact Layout": "Compacte Indeling",
+    "Choose how the compact toolbar layout looks.": "Kies hoe de compacte toolbar-indeling eruitziet.",
     "Initial State": "Beginstatus",
+    "Select which state the toolbar should use when the page loads.": "Kies in welke staat de toolbar moet staan wanneer de pagina laadt.",
     "Expanded": "Uitgebreid",
     "Expand": "Vergroten",
     "Compact": "Compact",
@@ -37,9 +41,11 @@
     "Import from file": "Importeren uit bestand",
     "Paste from clipboard": "Plakken vanaf klembord",
     "Updates": "Updates",
+    "Manage and check for new versions of this toolbar.": "Beheer en controleer op nieuwe versies van deze toolbar.",
     "Current version": "Huidige versie",
     "Check for Updates": "Controleer op Updates",
     "Cross-Domain Defaults": "Cross-Domein Standaarden",
+    "Share layout and toolbar settings between all your domains.": "Deel indelings- en toolbar-instellingen tussen al je domeinen.",
     "Sync with defaults": "Synchroniseren met standaarden",
     "Layout settings sync across domains": "Indelingsinstellingen synchroniseren tussen domeinen",
     "No defaults saved yet": "Nog geen standaarden opgeslagen",
@@ -47,6 +53,7 @@
     "Custom settings for this domain": "Aangepaste instellingen voor dit domein",
     "Save Current as Default": "Huidige Opslaan als Standaard",
     "Data": "Data",
+    "Export or import all toolbar configuration as JSON.": "Exporteer of importeer de volledige toolbarconfiguratie als JSON.",
     "Export": "Exporteren",
     "Import": "Importeren",
     "Reset Configuration": "Configuratie Resetten",
@@ -55,6 +62,7 @@
     "Configuration imported from clipboard": "Configuratie geïmporteerd vanuit klembord",
     "Custom": "Zelfgemaakt",
     "Language": "Taal",
+    "Change the language used in the toolbar interface.": "Wijzig de taal die in de toolbar-interface wordt gebruikt.",
 
     "Edit Domain": "Domein Bewerken",
     "Edit URL": "URL Bewerken",
@@ -165,6 +173,14 @@
 
     "Top": "Bovenkant",
     "Center": "Midden",
-    "Bottom": "Onderkant"
+    "Bottom": "Onderkant",
+
+    "Compact Alignment": "Uitlijning compacte weergave",
+    "Align the compact header relative to the expanded header. This only applies when the header is not placed directly on the left or right side of the screen.": "Lijn de compacte header uit ten opzichte van de uitgebreide header. Dit geldt alleen wanneer de header niet direct aan de linker of rechter kant van het scherm staat.",
+    "Left": "Links",
+    "Right": "Rechts",
+    "Minimized click behavior": "Gedrag bij klikken op minimale toolbar",
+    "Choose what should open when you click the minimized header.": "Kies wat er moet openen wanneer je op de minimale header klikt.",
+    "Previous": "Vorige"
 }
 

@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         CCV Floating Header Toolbar Loader
+// @name         CCVShop Floating Header Toolbar Loader
 // @namespace    https://github.com/esmjee/floating-header
 // @version      1.0.0
-// @description  Loader for CCV Toolbar - fetches and caches script/CSS files
-// @author       CCV Shop
+// @description  Loader for CCVShop Toolbar - fetches and caches script/CSS files
+// @author       CCVShop
 // @match        *://*.ccvshop.nl/*
 // @match        *://*.ccvdev.nl/*
 // @match        *://*.ccv.eu/*
@@ -70,7 +70,7 @@
             try {
                 languages[lang] = await fetchFile(`${CONFIG.GITHUB_BASE}/languages/${lang}.json`);
             } catch (e) {
-                console.warn(`[CCV Loader] Failed to fetch language ${lang}`);
+                console.warn(`[CCVShop Loader] Failed to fetch language ${lang}`);
             }
         }
         return languages;
@@ -133,7 +133,7 @@
                 const files = await fetchAllFiles();
                 setCache(files.script, files.css, files.languages);
             } catch (error) {
-                console.error('[CCV Loader] Failed to fetch files:', error);
+                console.error('[CCVShop Loader] Failed to fetch files:', error);
                 return;
             }
         }

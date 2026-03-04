@@ -1,6 +1,6 @@
-# CCV Floating Header Toolbar
+# CCVShop Floating Header Toolbar
 
-A customizable floating toolbar for CCV webshop developers to quickly navigate between domains, URLs, and switch webshop themes.
+A customizable floating toolbar for CCVShop webshop developers to quickly navigate between domains, URLs, and switch webshop themes.
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue)
 
@@ -21,7 +21,7 @@ Both methods support **automatic updates** - click "Check for Updates" in the to
 
 ### Option 1: Tampermonkey
 
-Best for users who work across multiple CCV domains (cache is shared across all sites).
+Best for users who work across multiple CCVShop domains (cache is shared across all sites).
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) browser extension
 2. Click [here to install the loader](https://raw.githubusercontent.com/esmjee/floating-header/main/loader.user.js) (or create a new script and paste `loader.user.js`)
@@ -32,7 +32,7 @@ Best for users who work across multiple CCV domains (cache is shared across all 
 Best for users who primarily work on one domain.
 
 1. Install [User JavaScript and CSS](https://chrome.google.com/webstore/detail/user-javascript-and-css/nbhcbdghjpllgmfilhnhkllmkecfmpld) extension
-2. Go to your CCV webshop
+2. Go to your CCVShop webshop
 3. Click the extension icon → "Add new"
 4. Copy the contents of `loader.js` into the JavaScript section
 5. Leave the CSS section empty (CSS is loaded automatically)
@@ -43,13 +43,13 @@ Best for users who primarily work on one domain.
 - **First run**: The loader fetches `script.js`, `style.css`, and language files from GitHub
 - **Subsequent visits**: Cached version loads instantly
 - **Manual update**: Click "Check for Updates" in Settings → automatically downloads and applies updates
-- **Tampermonkey bonus**: Same cached version across all CCV websites
+- **Tampermonkey bonus**: Same cached version across all CCVShop websites
 
 ## Usage
 
 ### Toolbar Controls
 - **Drag** the header to reposition it anywhere on screen
-- **Click** the CCV logo to show/hide the toolbar
+- **Click** the CCVShop logo to show/hide the toolbar
 - **Right-click** on domains, URLs, or themes for context menu options
 
 ### Tabs
@@ -158,7 +158,7 @@ Save your preferred layout settings to apply automatically on new webshops:
 
 | Loader | Storage | Scope |
 |--------|---------|-------|
-| `loader.user.js` | Tampermonkey's `GM_setValue` | Shared across all CCV domains |
+| `loader.user.js` | Tampermonkey's `GM_setValue` | Shared across all CCVShop domains |
 | `loader.js` | `localStorage` | Per-domain (each site caches separately) |
 
 Both loaders cache: script code, CSS, and language files. Updates only occur when explicitly requested.
@@ -195,4 +195,4 @@ MIT License - Feel free to modify and share!
 
 ---
 
-Made with ❤️ for CCV Shop developers
+Made with ❤️ for CCVShop developers

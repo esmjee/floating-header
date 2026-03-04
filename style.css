@@ -584,6 +584,10 @@
     &:last-child {
         margin-bottom: 0;
     }
+
+    .ccv-hint {
+        margin-bottom: 4px;
+    }
 }
 
 #ccv-toolbar .ccv-settings-label {
