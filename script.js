@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.7';
+    const VERSION = '2.1.8';
 
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
@@ -127,6 +127,8 @@ const CCVToolbar = (() => {
     let isDragging = false;
     let dragOffset = { x: 0, y: 0 };
     let lastExpandedBeforeMinimize = null;
+    let lastExpandedWidth = null;
+    let currentTab = 'links';
     let elements = {};
 
     const icons = {
@@ -1406,7 +1408,7 @@ const CCVToolbar = (() => {
                     </div>
                     <div class="ccv-settings-group">
                         <label class="ccv-settings-label">${t('Compact Alignment')}</label>
-                        <span class="ccv-hint">${t('Align the compact header relative to the expanded header. This only applies when the header is not placed directly on the left or right side of the screen.')}</span>
+                        <span class="ccv-hint">${t('Align the compact header relative to the expanded header.')}</span>
                         <div class="ccv-theme-grid" style="grid-template-columns: repeat(2, 1fr);">
                             <div class="ccv-theme-option ccv-compact-align-option ${config.compactAlign === 'left' ? 'active' : ''}" data-compact-align="left">
                                 <div class="preview" style="background: var(--ccv-surface-hover); text-align: left;">${icons.layout}</div>
@@ -2683,7 +2685,12 @@ const CCVToolbar = (() => {
                 detachFromDefaults();
                 saveConfig();
                 elements.toolbar.querySelectorAll('[data-compact-align]').forEach(o => o.classList.toggle('active', o.dataset.compactAlign === themeOption.dataset.compactAlign));
-                render();
+                if (!config.expanded) {
+                    elements.toolbar.classList.remove('ccv-compact-align-right');
+                    if (config.compactAlign === 'right') {
+                        elements.toolbar.classList.add('ccv-compact-align-right');
+                    }
+                }
                 return;
             }
             if (themeOption.dataset.minimizedBehavior) {
@@ -2918,7 +2925,8 @@ const CCVToolbar = (() => {
         if (existingPanel) existingPanel.remove();
 
         elements.toolbar.classList.remove('ccv-compact', 'ccv-compact-default', 'ccv-compact-circles', 'ccv-compact-horizontal', 'ccv-compact-minimal', 'ccv-compact-align-right');
-        
+        elements.toolbar.style.transform = '';
+
         if (!config.expanded) {
             elements.toolbar.classList.add('ccv-compact', `ccv-compact-${config.compactLayout}`);
             if (config.compactAlign === 'right') {
@@ -2928,6 +2936,16 @@ const CCVToolbar = (() => {
 
         const panel = config.expanded ? createExpandedPanel() : createCompactPanel();
         elements.toolbar.appendChild(panel);
+
+        if (config.expanded) {
+            lastExpandedWidth = panel.offsetWidth || lastExpandedWidth;
+        } else if (config.compactAlign === 'right' && lastExpandedWidth) {
+            const compactWidth = panel.offsetWidth || 0;
+            const delta = Math.max(0, lastExpandedWidth - compactWidth);
+            if (delta > 0) {
+                elements.toolbar.style.transform = `translateX(${delta}px)`;
+            }
+        }
 
         const dragTarget = panel.querySelector('.ccv-header') || panel.querySelector('.ccv-compact-minimal');
         if (dragTarget) setupDrag(dragTarget);

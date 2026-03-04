@@ -176,7 +176,7 @@
     "Bottom": "Onderkant",
 
     "Compact Alignment": "Uitlijning compacte weergave",
-    "Align the compact header relative to the expanded header. This only applies when the header is not placed directly on the left or right side of the screen.": "Lijn de compacte header uit ten opzichte van de uitgebreide header. Dit geldt alleen wanneer de header niet direct aan de linker of rechter kant van het scherm staat.",
+    "Align the compact header relative to the expanded header.": "Lijn de compacte header uit ten opzichte van de uitgebreide header.",
     "Left": "Links",
     "Right": "Rechts",
     "Minimized click behavior": "Gedrag bij klikken op minimale toolbar",
