@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.8';
+    const VERSION = '2.1.9';
 
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
@@ -2972,6 +2972,7 @@ const CCVToolbar = (() => {
         if (!redirectUrl) return;
 
         if (redirectUrl && redirectUrl !== window.location.href) {
+            showToast(t('Redirecting to') + ': ' + redirectUrl);
             sessionStorage.removeItem('ccv-login-redirect-url');
             window.location.replace(redirectUrl);
         }
