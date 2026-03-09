@@ -653,16 +653,20 @@
                 const displayName = escapeHtml((reg && reg.displayNameNl) ? reg.displayNameNl : name);
                 const checked = sel.compounds[name] ? ' checked' : '';
                 listHtml += '<div class="ccv-export-compound-row">';
-                listHtml += '<label class="ccv-export-compound-label"><input type="checkbox" class="export-compound" data-compound="' + escapeHtml(name) + '"' + checked + '> ' + displayName + '</label>';
+                listHtml += '<label class="ccv-export-label ccv-export-compound-label">';
+                listHtml += '<input type="checkbox" class="checkboxmassaction table-list-checkbox export-compound" data-compound="' + escapeHtml(name) + '"' + checked + '>';
+                listHtml += '<span class="ccv-export-name">' + displayName + '</span></label>';
                 if (reg && reg.childProducts && reg.childProducts.length > 0) {
-                    listHtml += '<ul class="ccv-export-children">';
+                    listHtml += '<div class="ccv-export-children">';
                     for (let c = 0; c < reg.childProducts.length; c++) {
                         const child = reg.childProducts[c];
                         const childChecked = (sel.children[name] && sel.children[name][child.productNumber]) ? ' checked' : '';
                         const childLabel = escapeHtml(child.nameNl || child.productNumber);
-                        listHtml += '<li><label class="ccv-export-child-label"><input type="checkbox" class="export-child" data-compound="' + escapeHtml(name) + '" data-product-number="' + escapeHtml(child.productNumber) + '"' + childChecked + '> ' + childLabel + '</label></li>';
+                        listHtml += '<label class="ccv-export-label ccv-export-child-label">';
+                        listHtml += '<input type="checkbox" class="checkboxmassaction table-list-checkbox export-child" data-compound="' + escapeHtml(name) + '" data-product-number="' + escapeHtml(child.productNumber) + '"' + childChecked + '>';
+                        listHtml += '<span class="ccv-export-name">' + childLabel + '</span></label>';
                     }
-                    listHtml += '</ul>';
+                    listHtml += '</div>';
                 }
                 listHtml += '</div>';
             }
@@ -685,11 +689,26 @@
                 .ccv-seed-compound-status { margin-top: 8px; font-size: 13px; color: var(--ccv-text-secondary, #666); }
                 .ccv-seed-compound-status-error { color: var(--ccv-danger, #dc3545); }
                 .ccv-export-compound-list { margin: 12px 0; }
-                .ccv-export-compound-row { margin-bottom: 12px; }
-                .ccv-export-compound-label { font-weight: 600; display: block; }
-                .ccv-export-children { margin: 4px 0 0 20px; padding-left: 12px; list-style: none; }
-                .ccv-export-children li { margin: 2px 0; }
-                .ccv-export-child-label { font-weight: normal; }
+                .ccv-export-compound-row { margin-bottom: 10px; }
+                .ccv-export-label { display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; }
+                .ccv-export-compound-list .checkboxmassaction.table-list-checkbox,
+                .ccv-export-compound-list input[type="checkbox"] {
+                    flex-shrink: 0;
+                    width: 18px;
+                    height: 18px;
+                    min-width: 18px;
+                    min-height: 18px;
+                    margin: 0;
+                    appearance: checkbox;
+                    -webkit-appearance: checkbox;
+                    display: inline-block;
+                    vertical-align: middle;
+                }
+                .ccv-export-name { flex: 1; }
+                .ccv-export-compound-label .ccv-export-name { font-weight: 600; }
+                .ccv-export-child-label .ccv-export-name { font-weight: normal; }
+                .ccv-export-children { margin: 4px 0 0 28px; }
+                .ccv-export-children .ccv-export-label { margin-bottom: 4px; }
             `.trim();
         }
     }
