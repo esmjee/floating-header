@@ -1221,7 +1221,8 @@ const CCVToolbar = (() => {
             if (response.ok) {
                 showToast(t('Switched to {0} theme', theme.name));
                 const path = window.location.pathname.toLowerCase();
-                if (!path.includes('/onderhoud/')) {
+                const cmsThemesPage = '/onderhoud/AdminItems/Settings/ShowSettings.php?SettingsCat=202';
+                if (!path.includes('/onderhoud/') || path.includes(cmsThemesPage)) {
                     setTimeout(() => {
                         window.location.reload();
                     }, 150);
