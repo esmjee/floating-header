@@ -1195,7 +1195,7 @@ const CCVToolbar = (() => {
                 const clickedBtn = container.querySelector(`[data-webshop-theme="${themeId}"]`);
                 if (clickedBtn) clickedBtn.classList.remove('loading');
             }
-            sessionStorage.setItem('ccv-pending-theme-after-login', JSON.stringify({
+            localStorage.setItem('ccv-pending-theme-after-login', JSON.stringify({
                 themeId,
                 timestamp: Date.now()
             }));
@@ -2996,10 +2996,10 @@ const CCVToolbar = (() => {
         const path = window.location.pathname.toLowerCase();
         if (!path.includes('/onderhoud/') || path.includes('/onderhoud/login.php')) return;
 
-        const raw = sessionStorage.getItem('ccv-pending-theme-after-login');
+        const raw = localStorage.getItem('ccv-pending-theme-after-login');
         if (!raw) return;
 
-        sessionStorage.removeItem('ccv-pending-theme-after-login');
+        localStorage.removeItem('ccv-pending-theme-after-login');
         let data;
         try {
             data = JSON.parse(raw);
@@ -3008,7 +3008,10 @@ const CCVToolbar = (() => {
         }
         const { themeId, timestamp } = data;
         if (!themeId || typeof timestamp !== 'number') return;
-        if (!isSameCalendarMinute(timestamp)) return;
+        if (!isSameCalendarMinute(timestamp)) {
+            localStorage.removeItem('ccv-pending-theme-after-login');
+            return;
+        }
 
         switchWebshopTheme(themeId);
     };
