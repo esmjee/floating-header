@@ -672,7 +672,7 @@
             }
             return `
                 <div class="ccv-script-settings" id="ccv-export-compound-root">
-                    <p class="ccv-script-desc">Select which compound products and child options to include in the export. Compound = main product; list below = options for that compound.</p>
+                    <p class="ccv-script-desc">Select which compound products and child options to include in the export.</p>
                     <div class="ccv-export-compound-list" onclick="event.stopPropagation()">
                         ${listHtml}
                     </div>
@@ -693,21 +693,21 @@
                 .ccv-export-label { display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; }
                 .ccv-export-compound-list .checkboxmassaction.table-list-checkbox,
                 .ccv-export-compound-list input[type="checkbox"] {
-                    flex-shrink: 0;
-                    width: 18px;
-                    height: 18px;
-                    min-width: 18px;
-                    min-height: 18px;
-                    margin: 0;
-                    appearance: checkbox;
-                    -webkit-appearance: checkbox;
-                    display: inline-block;
-                    vertical-align: middle;
+                    flex-shrink: 0 !important;
+                    width: 18px !important;
+                    height: 18px !important;
+                    min-width: 18px !important;
+                    min-height: 18px !important;
+                    margin: 0 4px 0 0 !important;
+                    appearance: checkbox !important;
+                    -webkit-appearance: checkbox !important;
+                    display: inline-block !important;
+                    vertical-align: middle !important;
                 }
                 .ccv-export-name { flex: 1; }
                 .ccv-export-compound-label .ccv-export-name { font-weight: 600; }
                 .ccv-export-child-label .ccv-export-name { font-weight: normal; }
-                .ccv-export-children { margin: 4px 0 0 28px; }
+                .ccv-export-children { margin: 4px 0 0 28px; display: flex; flex-direction: column; }
                 .ccv-export-children .ccv-export-label { margin-bottom: 4px; }
             `.trim();
         }
