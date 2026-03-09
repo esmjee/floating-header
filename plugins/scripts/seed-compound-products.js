@@ -46,6 +46,12 @@
         return origin + prefix;
     }
 
+    /** Return a random placeholder image URL for CSV HoofdImage (same seed = same image per photoId). */
+    function getPhotoUrl(photoId) {
+        if (!photoId) return '';
+        return 'https://picsum.photos/seed/' + String(photoId) + '/800/800';
+    }
+
     function getAddCompoundProductUrl() {
         return getBaseUrl() + '/AdminItems/ProductManagement/AddCompoundProduct.php?AdminItem=4';
     }
@@ -285,13 +291,34 @@
         return { name: productName, type: reg.type || 'normal', fields: [] };
     }
 
-    // Seed lists: call GenerateProductObject with each product name. Add more names to seed more products.
-    const COMPOUND_PRODUCTS = ['PC', 'Car'].map(function (productName) {
-        const obj = GenerateProductObject(productName);
-        return { name: obj.name, productName: productName, fields: obj.fields };
-    });
+    const COMPOUND_NAMES = ['PC', 'Car'];
 
-    const NORMAL_PRODUCTS = [];
+    function escapeHtml(s) {
+        if (s == null) return '';
+        return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    /** Default export selection: all compounds and all their children selected. */
+    function getDefaultExportSelection() {
+        const compounds = {};
+        const children = {};
+        for (let i = 0; i < COMPOUND_NAMES.length; i++) {
+            const name = COMPOUND_NAMES[i];
+            compounds[name] = true;
+            const reg = PRODUCT_REGISTRY[name];
+            if (reg && reg.childProducts && reg.childProducts.length > 0) {
+                children[name] = {};
+                for (let c = 0; c < reg.childProducts.length; c++) {
+                    children[name][reg.childProducts[c].productNumber] = true;
+                }
+            }
+        }
+        return { compounds, children };
+    }
 
     /**
      * Build a single CSV row (array of values in CSV_HEADERS order) for a product.
@@ -340,33 +367,44 @@
     }
 
     /**
-     * Build all export rows: child products first (Car), then compound products (PC, Car).
+     * Build all export rows: selected child products first, then selected compound products.
+     * @param {string[]} enabledLangs
+     * @param {{ compounds: Object.<string, boolean>, children: Object.<string, Object.<string, boolean>> }} selection - from UI checkboxes
      */
-    function buildAllExportRows(enabledLangs) {
+    function buildAllExportRows(enabledLangs, selection) {
         if (!enabledLangs || enabledLangs.length === 0) enabledLangs = ['nl', 'de'];
+        const sel = selection || getDefaultExportSelection();
         const firstLang = enabledLangs[0];
         const rows = [];
-        const regCar = PRODUCT_REGISTRY.Car;
-        if (regCar && regCar.childProducts && regCar.childProducts.length > 0) {
-            const defaults = { categoryId: regCar.categoryId, categoryPath: regCar.categoryPath, packageId: regCar.packageId };
-            for (let c = 0; c < regCar.childProducts.length; c++) {
-                const child = regCar.childProducts[c];
-                const key = _langKey(firstLang);
-                const childName = child['name' + key] != null ? child['name' + key] : (firstLang === 'nl' ? child.nameNl : child.nameDe) || child.productNumber;
-                rows.push(buildExportRow({
-                    name: childName,
-                    productNumber: child.productNumber,
-                    shortDesc: childName,
-                    description: childName,
-                    price: child.price,
-                    categoryId: defaults.categoryId,
-                    packageId: defaults.packageId,
-                    aliasSlug: String(child.productNumber).replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '')
-                }));
+        for (let i = 0; i < COMPOUND_NAMES.length; i++) {
+            const productName = COMPOUND_NAMES[i];
+            if (!sel.compounds[productName]) continue;
+            const reg = PRODUCT_REGISTRY[productName];
+            if (reg && reg.childProducts && reg.childProducts.length > 0) {
+                const childSel = sel.children[productName] || {};
+                const defaults = { categoryId: reg.categoryId, categoryPath: reg.categoryPath, packageId: reg.packageId };
+                for (let c = 0; c < reg.childProducts.length; c++) {
+                    const child = reg.childProducts[c];
+                    if (!childSel[child.productNumber]) continue;
+                    const key = _langKey(firstLang);
+                    const childName = child['name' + key] != null ? child['name' + key] : (firstLang === 'nl' ? child.nameNl : child.nameDe) || child.productNumber;
+                    rows.push(buildExportRow({
+                        name: childName,
+                        productNumber: child.productNumber,
+                        shortDesc: childName,
+                        description: childName,
+                        price: child.price,
+                        categoryId: defaults.categoryId,
+                        packageId: defaults.packageId,
+                        aliasSlug: String(child.productNumber).replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, ''),
+                        photoUrl: child.photoId ? getPhotoUrl(child.photoId) : ''
+                    }));
+                }
             }
         }
-        for (let i = 0; i < ['PC', 'Car'].length; i++) {
-            const productName = ['PC', 'Car'][i];
+        for (let i = 0; i < COMPOUND_NAMES.length; i++) {
+            const productName = COMPOUND_NAMES[i];
+            if (!sel.compounds[productName]) continue;
             const obj = GenerateProductObject(productName, { enabledLanguages: enabledLangs });
             const reg = PRODUCT_REGISTRY[productName];
             if (!reg || !obj.fields || obj.fields.length === 0) continue;
@@ -387,7 +425,8 @@
                 price: reg.price,
                 categoryId: reg.categoryId,
                 packageId: reg.packageId,
-                aliasSlug: aliasSlug
+                aliasSlug: aliasSlug,
+                photoUrl: reg.photoId ? getPhotoUrl(reg.photoId) : ''
             }));
         }
         return rows;
@@ -542,7 +581,41 @@
             }
         }
 
+        _saveExportSelection(selection) {
+            if (!this._scriptPath) return;
+            try {
+                const s = this._getSettings();
+                s.exportSelection = selection;
+                localStorage.setItem(SCRIPT_SETTINGS_KEY_PREFIX + this._scriptPath, JSON.stringify(s));
+            } catch (e) {}
+        }
+
+        _readExportSelectionFromDom() {
+            const root = document.getElementById('ccv-export-compound-root');
+            if (!root) return getDefaultExportSelection();
+            const compounds = {};
+            const children = {};
+            const compoundChecks = root.querySelectorAll('input.export-compound');
+            for (let i = 0; i < compoundChecks.length; i++) {
+                const el = compoundChecks[i];
+                const name = el.getAttribute('data-compound');
+                if (name) compounds[name] = el.checked;
+            }
+            const childChecks = root.querySelectorAll('input.export-child');
+            for (let j = 0; j < childChecks.length; j++) {
+                const el = childChecks[j];
+                const compoundName = el.getAttribute('data-compound');
+                const productNumber = el.getAttribute('data-product-number');
+                if (compoundName && productNumber) {
+                    if (!children[compoundName]) children[compoundName] = {};
+                    children[compoundName][productNumber] = el.checked;
+                }
+            }
+            return { compounds, children };
+        }
+
         runExport() {
+            const self = this;
             const statusEl = document.getElementById('ccv-seed-compound-status');
             const setStatus = function (text, isError) {
                 if (statusEl) {
@@ -550,11 +623,13 @@
                     statusEl.className = 'ccv-seed-compound-status' + (isError ? ' ccv-seed-compound-status-error' : '');
                 }
             };
+            const selection = this._readExportSelectionFromDom();
+            this._saveExportSelection(selection);
             setStatus('Preparing export…', false);
             getEnabledShopLanguages().then(function (langs) {
-                const rows = buildAllExportRows(langs);
+                const rows = buildAllExportRows(langs, selection);
                 if (rows.length === 0) {
-                    setStatus('No products to export.', true);
+                    setStatus('No products selected or to export.', true);
                     return;
                 }
                 const csv = csvFromRows(rows);
@@ -569,10 +644,34 @@
         }
 
         view() {
+            const settings = this._getSettings();
+            const sel = settings.exportSelection && settings.exportSelection.compounds ? settings.exportSelection : getDefaultExportSelection();
+            let listHtml = '';
+            for (let i = 0; i < COMPOUND_NAMES.length; i++) {
+                const name = COMPOUND_NAMES[i];
+                const reg = PRODUCT_REGISTRY[name];
+                const displayName = escapeHtml((reg && reg.displayNameNl) ? reg.displayNameNl : name);
+                const checked = sel.compounds[name] ? ' checked' : '';
+                listHtml += '<div class="ccv-export-compound-row">';
+                listHtml += '<label class="ccv-export-compound-label"><input type="checkbox" class="export-compound" data-compound="' + escapeHtml(name) + '"' + checked + '> ' + displayName + '</label>';
+                if (reg && reg.childProducts && reg.childProducts.length > 0) {
+                    listHtml += '<ul class="ccv-export-children">';
+                    for (let c = 0; c < reg.childProducts.length; c++) {
+                        const child = reg.childProducts[c];
+                        const childChecked = (sel.children[name] && sel.children[name][child.productNumber]) ? ' checked' : '';
+                        const childLabel = escapeHtml(child.nameNl || child.productNumber);
+                        listHtml += '<li><label class="ccv-export-child-label"><input type="checkbox" class="export-child" data-compound="' + escapeHtml(name) + '" data-product-number="' + escapeHtml(child.productNumber) + '"' + childChecked + '> ' + childLabel + '</label></li>';
+                    }
+                    listHtml += '</ul>';
+                }
+                listHtml += '</div>';
+            }
             return `
-                <div class="ccv-script-settings">
-                    <p class="ccv-script-desc">Export compound products and their child products as a CSV in the same format as the shop product export (tab-separated, compatible with import).</p>
-                    <p class="ccv-hint">Includes: Car child options (bodies, power, colors, wheels) and compound products PC and Car. To add more, extend <code>PRODUCT_REGISTRY</code> and the product list in <code>buildAllExportRows</code>.</p>
+                <div class="ccv-script-settings" id="ccv-export-compound-root">
+                    <p class="ccv-script-desc">Select which compound products and child options to include in the export. Compound = main product; list below = options for that compound.</p>
+                    <div class="ccv-export-compound-list">
+                        ${listHtml}
+                    </div>
                     <button type="button" class="ccv-btn ccv-btn-primary ccv-btn-full" data-action="script-custom-action" data-script-custom-action="runExport">
                         Export CSV
                     </button>
@@ -585,6 +684,12 @@
             return `
                 .ccv-seed-compound-status { margin-top: 8px; font-size: 13px; color: var(--ccv-text-secondary, #666); }
                 .ccv-seed-compound-status-error { color: var(--ccv-danger, #dc3545); }
+                .ccv-export-compound-list { margin: 12px 0; }
+                .ccv-export-compound-row { margin-bottom: 12px; }
+                .ccv-export-compound-label { font-weight: 600; display: block; }
+                .ccv-export-children { margin: 4px 0 0 20px; padding-left: 12px; list-style: none; }
+                .ccv-export-children li { margin: 2px 0; }
+                .ccv-export-child-label { font-weight: normal; }
             `.trim();
         }
     }
