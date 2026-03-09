@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.10';
+    const VERSION = '2.1.11';
 
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
@@ -2739,6 +2739,16 @@ const CCVToolbar = (() => {
             const detailView = elements.toolbar?.querySelector('#ccv-scripts-detail-view');
             if (listView) listView.classList.remove('ccv-scripts-hidden');
             if (detailView) detailView.classList.add('ccv-scripts-hidden');
+            return;
+        }
+
+        if (action === 'script-custom-action') {
+            const customAction = e.target.closest('[data-script-custom-action]')?.dataset.scriptCustomAction;
+            const path = elements.toolbar?.querySelector('#ccv-script-detail-body')?.dataset?.currentScriptPath;
+            if (customAction && path && loadedScriptInstances[path]) {
+                const instance = loadedScriptInstances[path];
+                if (typeof instance[customAction] === 'function') instance[customAction]();
+            }
             return;
         }
 
