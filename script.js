@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.11';
+    const VERSION = '2.1.12';
 
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
@@ -1041,6 +1041,7 @@ const CCVToolbar = (() => {
             const comparison = compareVersions(remoteVersion, VERSION);
             
             if (comparison > 0) {
+                localStorage.removeItem('ccv-scripts-registry-cache');
                 showUpdateModal(remoteVersion);
             } else if (comparison === 0) {
                 showToast(t('You have the latest version!') + ' (v' + VERSION + ')');
@@ -1072,6 +1073,7 @@ const CCVToolbar = (() => {
             const comparison = compareVersions(remoteVersion, VERSION);
             
             if (comparison > 0) {
+                localStorage.removeItem('ccv-scripts-registry-cache');
                 showToast(t('Update installed! Reloading...') + ` (v${VERSION} → v${remoteVersion})`);
                 setTimeout(() => window.location.reload(), 1500);
             } else if (comparison === 0) {

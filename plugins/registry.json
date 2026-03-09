@@ -6,7 +6,7 @@
           "path": "./plugins/scripts/seed-compound-products.js"
       }
   ],
-  "onderhoud/AdminItems/ProductOptions/AddProductOption.php": [
+  "onderhoud/AdminItems/ProductManagement/ShowProducts.php": [
       {
           "name": "Add product option attributes",
           "description": "Injects controls to add or reload generated attribute sets (colors, sizes, materials, etc.) on the Add Product Option page.",
