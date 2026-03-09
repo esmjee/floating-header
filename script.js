@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.9';
+    const VERSION = '2.1.10';
 
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
@@ -1195,6 +1195,10 @@ const CCVToolbar = (() => {
                 const clickedBtn = container.querySelector(`[data-webshop-theme="${themeId}"]`);
                 if (clickedBtn) clickedBtn.classList.remove('loading');
             }
+            sessionStorage.setItem('ccv-pending-theme-after-login', JSON.stringify({
+                themeId,
+                timestamp: Date.now()
+            }));
             const loginUrl = `${window.location.origin}/onderhoud/Login.php`;
             showToast(t('Login required to use this feature. Click {0} to login.', `<a href="${loginUrl}" target="_blank">${t('here')}</a>`), true);
             return;
@@ -2976,13 +2980,45 @@ const CCVToolbar = (() => {
             sessionStorage.removeItem('ccv-login-redirect-url');
             window.location.replace(redirectUrl);
         }
-    }
+    };
+
+    const isSameCalendarMinute = (timestamp, now = Date.now()) => {
+        const a = new Date(timestamp);
+        const b = new Date(now);
+        return a.getFullYear() === b.getFullYear() &&
+            a.getMonth() === b.getMonth() &&
+            a.getDate() === b.getDate() &&
+            a.getHours() === b.getHours() &&
+            a.getMinutes() === b.getMinutes();
+    };
+
+    const applyPendingThemeAfterLogin = () => {
+        const path = window.location.pathname.toLowerCase();
+        if (!path.includes('/onderhoud/') || path.includes('/onderhoud/login.php')) return;
+
+        const raw = sessionStorage.getItem('ccv-pending-theme-after-login');
+        if (!raw) return;
+
+        sessionStorage.removeItem('ccv-pending-theme-after-login');
+        let data;
+        try {
+            data = JSON.parse(raw);
+        } catch (_) {
+            return;
+        }
+        const { themeId, timestamp } = data;
+        if (!themeId || typeof timestamp !== 'number') return;
+        if (!isSameCalendarMinute(timestamp)) return;
+
+        switchWebshopTheme(themeId);
+    };
 
     const init = async () => {
         loadConfig();
         
         redirectAfterLogin();
         await loadTranslations(config.language);
+        applyPendingThemeAfterLogin();
         setupLoaderListeners();
 
         const shouldBeHidden = config.initialView === 'hidden' || !config.visible;
