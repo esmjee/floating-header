@@ -1480,8 +1480,8 @@ const CCVToolbar = (() => {
                         <label class="ccv-settings-label">${t('Data')}</label>
                         <span class="ccv-hint">${t('Export or import all toolbar configuration as JSON.')}</span>
                         <div class="ccv-btn-group">
-                            <button class="ccv-btn" data-action="export">${icons.download}<span>${t('Export')}</span></button>
-                            <button class="ccv-btn" data-action="import">${icons.upload}<span>${t('Import')}</span></button>
+                            <button class="ccv-btn" data-action="export">${icons.upload}<span>${t('Export')}</span></button>
+                            <button class="ccv-btn" data-action="import">${icons.download}<span>${t('Import')}</span></button>
                         </div>
                         <button class="ccv-btn ccv-btn-danger" data-action="reset" style="margin-top: 8px;">${icons.trash}<span>${t('Reset Configuration')}</span></button>
                     </div>
