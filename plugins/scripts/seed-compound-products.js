@@ -429,119 +429,109 @@
                 }
             };
 
-            setStatus('Checking if Compound Products app is installed…', false);
-            checkCompoundAppInstalled().then(function (result) {
-                if (!result.installed) {
-                    let msg = 'The Compound Products app does not appear to be installed. Please install it from the App Store first.';
-                    if (result.reason === 'fetch_error') msg = 'Could not check app status: ' + (result.error && result.error.message ? result.error.message : 'network error');
-                    setStatus(msg, true);
-                    showToast(msg);
+            setStatus('Fetching enabled shop languages…', false);
+            getEnabledShopLanguages().then(function (langs) {
+                setStatus('App is installed. Seeding compound product(s)…', false);
+                const compoundList = ['PC', 'Car'].map(function (productName) {
+                    const obj = GenerateProductObject(productName, { enabledLanguages: langs });
+                    return { name: obj.name, productName: productName, fields: obj.fields };
+                });
+                const addCompoundUrl = getAddCompoundProductUrl();
+                let done = 0;
+                const total = compoundList.length;
+                if (total === 0) {
+                    setStatus('No compound products configured.', true);
                     return;
                 }
-                setStatus('Fetching enabled shop languages…', false);
-                getEnabledShopLanguages().then(function (langs) {
-                    setStatus('App is installed. Seeding compound product(s)…', false);
-                    const compoundList = ['PC', 'Car'].map(function (productName) {
-                        const obj = GenerateProductObject(productName, { enabledLanguages: langs });
-                        return { name: obj.name, productName: productName, fields: obj.fields };
-                    });
-                    const addCompoundUrl = getAddCompoundProductUrl();
-                    let done = 0;
-                    const total = compoundList.length;
-                    if (total === 0) {
-                        setStatus('No compound products configured.', true);
+
+                function submitChildProductsThenCompound(item, index, next, enabledLangs) {
+                    const productName = item.productName;
+                    const reg = productName ? PRODUCT_REGISTRY[productName] : null;
+                    const childProducts = reg && reg.childProducts && reg.childProducts.length > 0 ? reg.childProducts : null;
+                    const placeholderIds = reg && reg.placeholderIds && reg.placeholderIds.length > 0 ? reg.placeholderIds : null;
+
+                    function doPostCompound(fieldsToUse) {
+                        const formData = buildFormData(fieldsToUse);
+                        setStatus('Adding compound: ' + (item.name || 'compound ' + (index + 1)) + '...', false);
+                        fetch(addCompoundUrl, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            body: formData
+                        }).then(function (res) {
+                            if (!res.ok) {
+                                setStatus('Failed to add ' + (item.name || '') + ': HTTP ' + res.status, true);
+                                showToast('Failed: HTTP ' + res.status);
+                                return;
+                            }
+                            done++;
+                            next();
+                        }).catch(function (err) {
+                            setStatus('Error: ' + (err && err.message ? err.message : 'request failed'), true);
+                            showToast('Error: ' + (err && err.message ? err.message : 'request failed'));
+                        });
+                    }
+
+                    if (!childProducts || childProducts.length === 0) {
+                        doPostCompound(item.fields);
                         return;
                     }
 
-                    function submitChildProductsThenCompound(item, index, next, enabledLangs) {
-                        const productName = item.productName;
-                        const reg = productName ? PRODUCT_REGISTRY[productName] : null;
-                        const childProducts = reg && reg.childProducts && reg.childProducts.length > 0 ? reg.childProducts : null;
-                        const placeholderIds = reg && reg.placeholderIds && reg.placeholderIds.length > 0 ? reg.placeholderIds : null;
+                    setStatus('Creating ' + childProducts.length + ' child product(s) for ' + (item.name || '') + '...', false);
+                    const defaults = reg ? { categoryId: reg.categoryId, categoryPath: reg.categoryPath, packageId: reg.packageId } : {};
+                    let createdIds = [];
+                    let i = 0;
 
-                        function doPostCompound(fieldsToUse) {
-                            const formData = buildFormData(fieldsToUse);
-                            setStatus('Adding compound: ' + (item.name || 'compound ' + (index + 1)) + '...', false);
-                            fetch(addCompoundUrl, {
-                                method: 'POST',
-                                credentials: 'same-origin',
-                                body: formData
-                            }).then(function (res) {
-                                if (!res.ok) {
-                                    setStatus('Failed to add ' + (item.name || '') + ': HTTP ' + res.status, true);
-                                    showToast('Failed: HTTP ' + res.status);
-                                    return;
-                                }
-                                done++;
-                                next();
-                            }).catch(function (err) {
-                                setStatus('Error: ' + (err && err.message ? err.message : 'request failed'), true);
-                                showToast('Error: ' + (err && err.message ? err.message : 'request failed'));
-                            });
-                        }
-
-                        if (!childProducts || childProducts.length === 0) {
-                            doPostCompound(item.fields);
-                            return;
-                        }
-
-                        setStatus('Creating ' + childProducts.length + ' child product(s) for ' + (item.name || '') + '...', false);
-                        const defaults = reg ? { categoryId: reg.categoryId, categoryPath: reg.categoryPath, packageId: reg.packageId } : {};
-                        let createdIds = [];
-                        let i = 0;
-
-                        function postNextChild() {
-                            if (i >= childProducts.length) {
-                                let fieldsToUse = item.fields;
-                                if (placeholderIds && createdIds.length === placeholderIds.length) {
-                                    let compoundJson = null;
-                                    const out = [];
-                                    for (var f = 0; f < item.fields.length; f++) {
-                                        const key = item.fields[f][0];
-                                        let val = item.fields[f][1];
-                                        if (key === 'CompoundElements' && typeof val === 'string') {
-                                            compoundJson = val;
-                                            for (var p = 0; p < placeholderIds.length; p++) {
-                                                compoundJson = compoundJson.replace(new RegExp('\\b' + String(placeholderIds[p]) + '\\b', 'g'), String(createdIds[p]));
-                                            }
-                                            val = compoundJson;
+                    function postNextChild() {
+                        if (i >= childProducts.length) {
+                            let fieldsToUse = item.fields;
+                            if (placeholderIds && createdIds.length === placeholderIds.length) {
+                                let compoundJson = null;
+                                const out = [];
+                                for (var f = 0; f < item.fields.length; f++) {
+                                    const key = item.fields[f][0];
+                                    let val = item.fields[f][1];
+                                    if (key === 'CompoundElements' && typeof val === 'string') {
+                                        compoundJson = val;
+                                        for (var p = 0; p < placeholderIds.length; p++) {
+                                            compoundJson = compoundJson.replace(new RegExp('\\b' + String(placeholderIds[p]) + '\\b', 'g'), String(createdIds[p]));
                                         }
-                                        out.push([key, val]);
+                                        val = compoundJson;
                                     }
-                                    fieldsToUse = out;
+                                    out.push([key, val]);
                                 }
-                                doPostCompound(fieldsToUse);
-                                return;
+                                fieldsToUse = out;
                             }
-                            const child = childProducts[i];
-                            const childFields = buildNormalProductFields(child, defaults, enabledLangs);
-                            submitNormalProduct(childFields).then(function (newId) {
-                                createdIds.push(newId || placeholderIds[i]);
-                                i++;
-                                setStatus('Created child ' + i + '/' + childProducts.length + ' for ' + (item.name || '') + (newId ? ' (ID ' + newId + ')' : '') + '...', false);
-                                postNextChild();
-                            }).catch(function (err) {
-                                setStatus('Failed to create child product: ' + (err && err.message ? err.message : 'request failed'), true);
-                                showToast('Failed to create child product');
-                            });
-                        }
-                        postNextChild();
-                    }
-
-                    function postNext(index) {
-                        if (index >= total) {
-                            setStatus('Done. Seeded ' + total + ' compound product(s).', false);
-                            showToast('Seeded ' + total + ' compound product(s).');
+                            doPostCompound(fieldsToUse);
                             return;
                         }
-                        const item = compoundList[index];
-                        submitChildProductsThenCompound(item, index, function () { postNext(index + 1); }, langs);
+                        const child = childProducts[i];
+                        const childFields = buildNormalProductFields(child, defaults, enabledLangs);
+                        submitNormalProduct(childFields).then(function (newId) {
+                            createdIds.push(newId || placeholderIds[i]);
+                            i++;
+                            setStatus('Created child ' + i + '/' + childProducts.length + ' for ' + (item.name || '') + (newId ? ' (ID ' + newId + ')' : '') + '...', false);
+                            postNextChild();
+                        }).catch(function (err) {
+                            setStatus('Failed to create child product: ' + (err && err.message ? err.message : 'request failed'), true);
+                            showToast('Failed to create child product');
+                        });
                     }
-                    postNext(0);
-                }).catch(function (err) {
-                    setStatus('Could not load shop languages: ' + (err && err.message ? err.message : 'request failed'), true);
-                    showToast('Could not load shop languages');
-                });
+                    postNextChild();
+                }
+
+                function postNext(index) {
+                    if (index >= total) {
+                        setStatus('Done. Seeded ' + total + ' compound product(s).', false);
+                        showToast('Seeded ' + total + ' compound product(s).');
+                        return;
+                    }
+                    const item = compoundList[index];
+                    submitChildProductsThenCompound(item, index, function () { postNext(index + 1); }, langs);
+                }
+                postNext(0);
+            }).catch(function (err) {
+                setStatus('Could not load shop languages: ' + (err && err.message ? err.message : 'request failed'), true);
+                showToast('Could not load shop languages');
             });
         }
 
