@@ -1,8 +1,8 @@
 {
   "onderhoud": [
       {
-          "name": "Seed compound products",
-          "description": "Check that the Compound Products app is installed, then seed compound products (e.g. PC) into the webshop. Easy to extend with more products in the script.",
+          "name": "Export compound products",
+          "description": "Export compound products (PC, Car) and their child products as a CSV in the same format as the shop product export.",
           "path": "./plugins/scripts/seed-compound-products.js"
       }
   ],
