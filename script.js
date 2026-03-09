@@ -1220,9 +1220,12 @@ const CCVToolbar = (() => {
 
             if (response.ok) {
                 showToast(t('Switched to {0} theme', theme.name));
-                setTimeout(() => {
-                    window.location.reload();
-                }, 150);
+                const path = window.location.pathname.toLowerCase();
+                if (!path.includes('/onderhoud/')) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 150);
+                }
             } else {
                 showToast(t('Failed to switch theme ({0})', response.status));
                 themeSwitchingInProgress = false;
