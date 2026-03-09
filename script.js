@@ -3251,6 +3251,13 @@ const CCVToolbar = (() => {
                 }
             }
             const scriptPath = elements.toolbar?.querySelector('#ccv-script-detail-body')?.dataset?.currentScriptPath;
+            if (scriptPath && (e.target.classList?.contains('export-compound') || e.target.classList?.contains('export-child'))) {
+                const instance = loadedScriptInstances[scriptPath];
+                if (instance && typeof instance._readExportSelectionFromDom === 'function' && typeof instance._saveExportSelection === 'function') {
+                    instance._saveExportSelection(instance._readExportSelectionFromDom());
+                }
+                return;
+            }
             if (scriptPath && e.target.dataset?.scriptSetting !== undefined) {
                 const key = e.target.dataset.scriptSetting;
                 const settings = getScriptSettings(scriptPath);

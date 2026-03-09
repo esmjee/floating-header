@@ -669,7 +669,7 @@
             return `
                 <div class="ccv-script-settings" id="ccv-export-compound-root">
                     <p class="ccv-script-desc">Select which compound products and child options to include in the export. Compound = main product; list below = options for that compound.</p>
-                    <div class="ccv-export-compound-list">
+                    <div class="ccv-export-compound-list" onclick="event.stopPropagation()">
                         ${listHtml}
                     </div>
                     <button type="button" class="ccv-btn ccv-btn-primary ccv-btn-full" data-action="script-custom-action" data-script-custom-action="runExport">
