@@ -1309,10 +1309,13 @@ const CCVToolbar = (() => {
                         ? `/onderhoud/AdminItems/Settings/TemplateChoice.Settings.php?SettingsCat=202&AdminItem=7&Template=${encodeURIComponent(themeConfig.id)}&TemplateType=BasedOnProtom&TemplateId=${encodeURIComponent(themeConfig.themeId)}&VariationId=${themeConfig.variationId ?? ''}`
                         : null;
 
-                    let themeHtml = `<span class="ccv-shop-info-item" data-tooltip="${t('Theme')}" data-copy="${info.theme}">${icons.palette}${info.theme}</span>`;
-                    if (endUserUrl) {
-                        themeHtml += `<a href="${endUserUrl}" target="_blank" class="ccv-shop-info-item ccv-shop-info-link" data-tooltip="End user settings">${icons.open}</a>`;
-                    }
+                    const themeHtml = `
+                        <span class="ccv-shop-info-item" data-tooltip="${t('Theme')}" data-copy="${info.theme}">
+                            ${icons.palette}
+                            <span style="margin-left: 4px; margin-right: 4px;">${info.theme}</span>
+                            ${endUserUrl ? `<a href="${endUserUrl}" target="_blank" class="ccv-shop-info-link" data-tooltip="End user settings" style="display: inline-flex; align-items: center; margin-left: 4px;">${icons.open}</a>` : ''}
+                        </span>
+                    `;
                     parts.push(themeHtml);
                 }
                 if (parts.length > 0) {
