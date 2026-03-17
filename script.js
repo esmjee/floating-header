@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.13';
+    const VERSION = '2.1.14';
 
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
@@ -70,7 +70,6 @@ const CCVToolbar = (() => {
         customColors: [],
         usesDefaultConfig: true,
         language: 'en',
-        loginRedirect: true,
         domains: [
             { id: '1', name: 'Hoofd Webshop', url: 'https://ejansen.ccvdev.nl', icon: 'globe', showInCompact: true, color: '' },
             { id: '2', name: 'Admin', url: 'https://ejansen-admin.ccvdev.nl', icon: 'users', showInCompact: false, color: '' },
@@ -82,16 +81,21 @@ const CCVToolbar = (() => {
             { id: '8', name: 'API Docs', url: '/API/Docs', icon: 'code', showInCompact: false, color: '' }
         ],
         webshopThemes: [
-            { id: 'Oliver', name: 'Oliver', color: '#eee600' },
-            { id: 'Macro', name: 'Macro', color: '#566627' },
-            { id: 'Exo', name: 'Exo', color: '#34495e' },
-            { id: 'Levi', name: 'Levi', color: '#8e44ad' },
-            { id: 'Ivy', name: 'Ivy', color: '#a295d6' },
-            { id: 'Tailor', name: 'Tailor', color: '#c21e56' },
-            { id: 'Mila', name: 'Mila', color: '#34495e' },
-            { id: 'Ceyda', name: 'Ceyda', color: '#808080' },
-            { id: 'Martoni', name: 'Martoni', color: '#f7e7ce' },
-            { id: 'Sensa', name: 'Sensa', color: '#dc5a5d' }
+            { id: 'Oliver', name: 'Oliver', color: '#eee600', themeId: 141 },
+            { id: 'Macro', name: 'Macro', color: '#566627', themeId: 137 },
+            { id: 'Exo', name: 'Exo', color: '#34495e', themeId: 127 },
+            { id: 'Levi', name: 'Levi', color: '#8e44ad', themeId: 135 },
+            { id: 'Ivy', name: 'Ivy', color: '#a295d6', themeId: 134 },
+            { id: 'Tailor', name: 'Tailor', color: '#c21e56', themeId: 142 },
+            { id: 'Mila', name: 'Mila', color: '#34495e', themeId: 131 },
+            { id: 'Ceyda', name: 'Ceyda', color: '#808080', themeId: 129 },
+            { id: 'Martoni', name: 'Martoni', color: '#f7e7ce', themeId: 123 },
+            { id: 'Sensa', name: 'Sensa', color: '#dc5a5d', themeId: 79 },
+            { id: 'Atlas', name: 'Atlas', color: '#34495e', themeId: 143 },
+            { id: 'Zeus', name: 'Zeus', color: '#34495e', themeId: 148 },
+            { id: 'Macro_Auto', name: 'Macro Auto', color: '#566627', themeId: 137, variationId: 29 },
+            { id: 'Mila_Music', name: 'Mila Music', color: '#34495e', themeId: 131, variationId: 20 },
+            { id: 'Ceyda_Sieraden', name: 'Ceyda Sieraden', color: '#808080', themeId: 129, variationId: 4 }
         ],
         infoBarPosition: 'center'
     };
@@ -386,7 +390,38 @@ const CCVToolbar = (() => {
                 saveConfig();
             }
         }
-        
+
+        const themeIdMap = {
+            Oliver: { themeId: 141 },
+            Macro: { themeId: 137 },
+            Exo: { themeId: 127 },
+            Levi: { themeId: 135 },
+            Ivy: { themeId: 134 },
+            Mila: { themeId: 131 },
+            Ceyda: { themeId: 129 },
+            Martoni: { themeId: 123 },
+            Sensa: { themeId: 79 },
+            Tailor: { themeId: 142 },
+            Atlas: { themeId: 143 },
+            Zeus: { themeId: 148 },
+            Macro_Auto: { themeId: 137, variationId: 29 },
+            Mila_Music: { themeId: 131, variationId: 20 },
+            Ceyda_Sieraden: { themeId: 129, variationId: 4 }
+        };
+
+        if (Array.isArray(config.webshopThemes)) {
+            config.webshopThemes = config.webshopThemes.map(theme => {
+                const mapping = theme && theme.id ? themeIdMap[theme.id] : null;
+                if (!mapping) return theme;
+                if (theme.themeId && theme.variationId !== undefined) return theme;
+                return {
+                    ...theme,
+                    themeId: theme.themeId ?? mapping.themeId,
+                    variationId: theme.variationId ?? mapping.variationId
+                };
+            });
+        }
+
         if (config.usesDefaultConfig) {
             const defaults = getDefaultsFromCookie();
             if (defaults) {
@@ -926,7 +961,9 @@ const CCVToolbar = (() => {
             const classes = ['ccv-context-item'];
             if (item.danger) classes.push('danger');
             if (item.active) classes.push('active');
-            return `<button class="${classes.join(' ')}">${item.icon || ''}${item.label}${item.active ? icons.check : ''}</button>`;
+            if (item.disabled) classes.push('disabled');
+            const disabledAttr = item.disabled ? ' disabled' : '';
+            return `<button class="${classes.join(' ')}"${disabledAttr}>${item.icon || ''}${item.label}${item.active ? icons.check : ''}</button>`;
         }).join('');
 
         document.body.appendChild(menu);
@@ -958,6 +995,14 @@ const CCVToolbar = (() => {
         let itemIndex = 0;
         menuItems.forEach((item, i) => {
             if (!item.separator) {
+                if (item.disabled) {
+                    buttons[itemIndex].onclick = (ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                    };
+                    itemIndex++;
+                    return;
+                }
                 buttons[itemIndex].onclick = () => {
                     menu.remove();
                     if (item.action) item.action();
@@ -1120,27 +1165,11 @@ const CCVToolbar = (() => {
 
     const navigateUrl = (url, domain = null) => {
         const fullUrl = domain ? `${domain}${url}` : url;
-        
-        if (config.loginRedirect) {
-            const fullUrlLower = fullUrl.toLowerCase();
-            if (fullUrlLower.includes('/onderhoud/')) {
-                sessionStorage.setItem('ccv-login-redirect-url', fullUrl);
-            }
-        }
-        
         window.location.href = fullUrl;
     };
 
     const openUrlNewTab = (url, domain = null) => {
         const fullUrl = domain ? `${domain}${url}` : url;
-        
-        if (config.loginRedirect) {
-            const fullUrlLower = fullUrl.toLowerCase();
-            if (fullUrlLower.includes('/onderhoud/')) {
-                sessionStorage.setItem('ccv-login-redirect-url', fullUrl);
-            }
-        }
-        
         window.open(fullUrl, '_blank');
     };
 
@@ -1273,7 +1302,19 @@ const CCVToolbar = (() => {
                 const parts = [];
                 if (info.node) parts.push(`<span class="ccv-shop-info-item" data-tooltip="${t('Node')}" data-copy="${info.node}">${icons.server}${info.node}</span>`);
                 if (info.shopId) parts.push(`<span class="ccv-shop-info-item" data-tooltip="${t('Shop ID')}" data-copy="${info.shopId}">${icons.database}${info.shopId}</span>`);
-                if (info.theme) parts.push(`<span class="ccv-shop-info-item" data-tooltip="${t('Theme')}" data-copy="${info.theme}">${icons.palette}${info.theme}</span>`);
+                if (info.theme) {
+                    const themeConfig = config.webshopThemes?.find(t => t.id === info.theme) || null;
+                    const hasEndUserId = !!themeConfig?.themeId;
+                    const endUserUrl = hasEndUserId
+                        ? `/onderhoud/AdminItems/Settings/TemplateChoice.Settings.php?SettingsCat=202&AdminItem=7&Template=${encodeURIComponent(themeConfig.id)}&TemplateType=BasedOnProtom&TemplateId=${encodeURIComponent(themeConfig.themeId)}&VariationId=${themeConfig.variationId ?? ''}`
+                        : null;
+
+                    let themeHtml = `<span class="ccv-shop-info-item" data-tooltip="${t('Theme')}" data-copy="${info.theme}">${icons.palette}${info.theme}</span>`;
+                    if (endUserUrl) {
+                        themeHtml += `<a href="${endUserUrl}" target="_blank" class="ccv-shop-info-item ccv-shop-info-link" data-tooltip="End user settings">${icons.open}</a>`;
+                    }
+                    parts.push(themeHtml);
+                }
                 if (parts.length > 0) {
                     parts.push(`<button class="ccv-info-bar-menu" data-action="info-bar-menu" data-tooltip="${t('Position')}">${icons.moreVertical}</button>`);
                 }
@@ -1423,21 +1464,6 @@ const CCVToolbar = (() => {
                             <div class="ccv-theme-option ccv-compact-align-option ${config.compactAlign === 'right' ? 'active' : ''}" data-compact-align="right">
                                 <div class="preview" style="background: var(--ccv-surface-hover); text-align: right; transform: scaleX(-1);">${icons.layout}</div>
                                 <span class="name">${t('Right')}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="ccv-settings-group">
-                        <label class="ccv-settings-label">${t('Login Redirect')}</label>
-                        <div class="ccv-defaults-card">
-                            <div class="ccv-defaults-toggle-row">
-                                <div class="ccv-defaults-toggle-info">
-                                    <span class="ccv-defaults-toggle-title">${t('Redirect after login')}</span>
-                                    <span class="ccv-defaults-toggle-desc">${t('Remembers the page you were trying to visit and redirects you there after logging in')}</span>
-                                </div>
-                                <label class="ccv-toggle">
-                                    <input type="checkbox" id="ccv-login-redirect" ${config.loginRedirect ? 'checked' : ''}>
-                                    <span class="ccv-toggle-slider"></span>
-                                </label>
                             </div>
                         </div>
                     </div>
@@ -1977,7 +2003,6 @@ const CCVToolbar = (() => {
             if (data.customColors) config.customColors = data.customColors;
             if (data.position) config.position = data.position;
             if (typeof data.usesDefaultConfig === 'boolean') config.usesDefaultConfig = data.usesDefaultConfig;
-            if (typeof data.loginRedirect === 'boolean') config.loginRedirect = data.loginRedirect;
             if (data.language) config.language = data.language;
             if (data.infoBarPosition) config.infoBarPosition = data.infoBarPosition;
             applyTheme();
@@ -2004,8 +2029,7 @@ const CCVToolbar = (() => {
             position: config.position,
             usesDefaultConfig: config.usesDefaultConfig,
             language: config.language,
-            infoBarPosition: config.infoBarPosition,
-            loginRedirect: config.loginRedirect
+            infoBarPosition: config.infoBarPosition
         }, null, 2);
         const blob = new Blob([data], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -2043,7 +2067,6 @@ const CCVToolbar = (() => {
                     if (data.compactAlign) config.compactAlign = data.compactAlign;
                     if (data.initialView) config.initialView = data.initialView;
                     if (data.minimizedClickBehavior) config.minimizedClickBehavior = data.minimizedClickBehavior;
-                    if (typeof data.loginRedirect === 'boolean') config.loginRedirect = data.loginRedirect;
                     if (data.language) config.language = data.language;
                     if (data.infoBarPosition) config.infoBarPosition = data.infoBarPosition;
                     applyTheme();
@@ -2317,21 +2340,22 @@ const CCVToolbar = (() => {
     };
 
     const presetWebshopThemes = [
-        { id: 'Oliver', name: 'Oliver' },
-        { id: 'Macro', name: 'Macro' },
-        { id: 'Exo', name: 'Exo' },
-        { id: 'Levi', name: 'Levi' },
-        { id: 'Ivy', name: 'Ivy' },
-        { id: 'Tailor', name: 'Tailor' },
-        { id: 'Mila', name: 'Mila' },
-        { id: 'Ceyda', name: 'Ceyda' },
-        { id: 'Martoni', name: 'Martoni' },
-        { id: 'Sensa', name: 'Sensa' },
+        { id: 'Oliver', name: 'Oliver', themeId: 141, color: '#eee600' },
+        { id: 'Macro', name: 'Macro', themeId: 137, color: '#566627' },
+        { id: 'Exo', name: 'Exo', themeId: 127, color: '#34495e' },
+        { id: 'Levi', name: 'Levi', themeId: 135, color: '#a295d6' },
+        { id: 'Ivy', name: 'Ivy', themeId: 134, color: '#8e44ad' },
+        { id: 'Mila', name: 'Mila', themeId: 131, color: '#34495e' },
+        { id: 'Ceyda', name: 'Ceyda', themeId: 129, color: '#808080' },
+        { id: 'Martoni', name: 'Martoni', themeId: 123, color: '#f7e7ce' },
+        { id: 'Sensa', name: 'Sensa', themeId: 79, color: '#dc5a5d' },
         { separator: true },
-        { id: 'Macro_Auto', name: 'Macro Auto' },
-        { id: 'Tailor', name: 'Tailor' },
-        { id: 'Mila_Celebration', name: 'Mila Celebration' },
-        { id: 'Ceyda_Sport', name: 'Ceyda Sport' }
+        { id: 'Tailor', name: 'Tailor', themeId: 142, color: '#c21e56' },
+        { id: 'Atlas', name: 'Atlas', themeId: 143, color: '#64e1f2' },
+        { id: 'Zeus', name: 'Zeus', themeId: 148, color: '#e864f2' },
+        { id: 'Macro_Auto', name: 'Macro Auto', themeId: 137, variationId: 29, color: '#566627' },
+        { id: 'Mila_Music', name: 'Mila Music', themeId: 131, variationId: 20, color: '#34495e' },
+        { id: 'Ceyda_Sieraden', name: 'Ceyda Sieraden', themeId: 129, variationId: 4, color: '#808080' }
     ];
 
     const showWebshopThemeModal = (theme = null) => {
@@ -2353,6 +2377,14 @@ const CCVToolbar = (() => {
                 </div>
             </div>
             <div class="ccv-input-group">
+                <label class="ccv-input-label">${t('Theme ID')}</label>
+                <span class="ccv-hint" style="margin-top: 4px; margin-bottom: 8px;">${t('Not required. This is used to create the link to the webshop theme end user settings.')}</span>
+                <div style="display: flex; gap: 8px; align-items: stretch;">
+                    <input type="number" class="ccv-input" id="ccv-theme-theme-id" placeholder="${t('e.g. 141')}" value="${theme?.themeId ?? ''}" style="flex: 1;">
+                    <input type="number" class="ccv-input" id="ccv-theme-variation-id" placeholder="${t('Variation ID (optional)')}" value="${theme?.variationId ?? ''}" style="flex: 1;">
+                </div>
+            </div>
+            <div class="ccv-input-group">
                 <label class="ccv-input-label">${t('Color')}</label>
                 <input type="color" class="ccv-input ccv-input-color" id="ccv-theme-color" value="${theme?.color || '#6366f1'}">
             </div>
@@ -2362,6 +2394,10 @@ const CCVToolbar = (() => {
             const name = document.getElementById('ccv-theme-name').value.trim();
             const id = document.getElementById('ccv-theme-id').value.trim();
             const color = document.getElementById('ccv-theme-color').value;
+            const themeIdRaw = document.getElementById('ccv-theme-theme-id').value.trim();
+            const variationIdRaw = document.getElementById('ccv-theme-variation-id').value.trim();
+            const themeId = themeIdRaw ? Number(themeIdRaw) : null;
+            const variationId = variationIdRaw ? Number(variationIdRaw) : null;
 
             if (!name || !id) {
                 showToast(t('Please fill in all fields'));
@@ -2376,7 +2412,7 @@ const CCVToolbar = (() => {
                         showToast(t('Theme ID already exists'));
                         return;
                     }
-                    config.webshopThemes[index] = { ...config.webshopThemes[index], id: newId, name, color };
+                    config.webshopThemes[index] = { ...config.webshopThemes[index], id: newId, name, color, themeId, variationId };
                 }
                 showToast(t('Theme updated'));
             } else {
@@ -2384,7 +2420,7 @@ const CCVToolbar = (() => {
                     showToast(t('Theme ID already exists'));
                     return;
                 }
-                config.webshopThemes.push({ id, name, color });
+                config.webshopThemes.push({ id, name, color, themeId, variationId });
                 showToast(t('Theme added'));
             }
             
@@ -2411,6 +2447,9 @@ const CCVToolbar = (() => {
                         action: () => {
                             document.getElementById('ccv-theme-id').value = preset.id;
                             document.getElementById('ccv-theme-name').value = preset.name;
+                            document.getElementById('ccv-theme-color').value = preset.color;
+                            document.getElementById('ccv-theme-theme-id').value = preset.themeId;
+                            document.getElementById('ccv-theme-variation-id').value = preset.variationId;
                         }
                     };
                 });
@@ -2427,11 +2466,17 @@ const CCVToolbar = (() => {
 
         container.innerHTML = config.webshopThemes.map((theme, index) => {
             const isActive = currentTheme && theme.id === currentTheme;
+            const hasEndUserId = !!theme.themeId;
+            const endUserUrl = hasEndUserId
+                ? `/onderhoud/AdminItems/Settings/TemplateChoice.Settings.php?SettingsCat=202&AdminItem=7&Template=${encodeURIComponent(theme.id)}&TemplateType=BasedOnProtom&TemplateId=${encodeURIComponent(theme.themeId)}&VariationId=${theme.variationId ?? ''}`
+                : null;
+
             return `
-            <div class="ccv-webshop-theme-btn ${isActive ? 'active' : ''}" data-webshop-theme="${theme.id}" data-theme-index="${index}">
+            <div class="ccv-webshop-theme-btn ${isActive ? 'active' : ''}" data-webshop-theme="${theme.id}" data-theme-index="${index}" ${endUserUrl ? `data-end-user-url="${endUserUrl}"` : ''}>
                 <span class="ccv-webshop-drag">${icons.menu}</span>
                 <span class="ccv-webshop-color" style="background: ${theme.color}"></span>
                 <span class="ccv-webshop-name">${theme.name}</span>
+                ${isActive && endUserUrl ? `<a href="${endUserUrl}" target="_blank" class="ccv-webshop-enduser-link" data-tooltip="End user settings">${icons.open}</a>` : ''}
                 ${isActive ? `<span class="ccv-webshop-active">${icons.check}</span>` : ''}
             </div>
         `}).join('');
@@ -2502,9 +2547,24 @@ const CCVToolbar = (() => {
             btn.oncontextmenu = (e) => {
                 const theme = config.webshopThemes.find(t => t.id === btn.dataset.webshopTheme);
                 if (!theme) return;
-                
-                showContextMenu(e, [
+
+                const hasEndUserId = !!theme.themeId;
+                const endUserUrl = hasEndUserId
+                    ? `/onderhoud/AdminItems/Settings/TemplateChoice.Settings.php?SettingsCat=202&AdminItem=7&Template=${encodeURIComponent(theme.id)}&TemplateType=BasedOnProtom&TemplateId=${encodeURIComponent(theme.themeId)}&VariationId=${theme.variationId ?? ''}`
+                    : null;
+
+                const menuItems = [
                     { icon: icons.palette, label: t('Apply theme'), action: () => switchWebshopTheme(theme.id) },
+                    {
+                        icon: icons.open,
+                        label: t('Go to end user settings'),
+                        disabled: !endUserUrl,
+                        action: () => {
+                            if (endUserUrl) {
+                                window.open(endUserUrl, '_blank');
+                            }
+                        }
+                    },
                     { separator: true },
                     { icon: icons.edit, label: t('Edit'), action: () => showWebshopThemeModal(theme) },
                     { icon: icons.delete, label: t('Delete'), danger: true, action: () => {
@@ -2515,7 +2575,9 @@ const CCVToolbar = (() => {
                             showToast(t('Theme deleted'));
                         });
                     }}
-                ]);
+                ];
+
+                showContextMenu(e, menuItems);
             };
         });
     };
@@ -2979,19 +3041,7 @@ const CCVToolbar = (() => {
     };
 
     const redirectAfterLogin = () => {
-        if (!config.loginRedirect) return;
-
-        const path = window.location.pathname.toLowerCase();
-        if (!path.includes('/onderhoud/') || path.includes('/onderhoud/login.php')) return;
-
-        const redirectUrl = sessionStorage.getItem('ccv-login-redirect-url');
-        if (!redirectUrl) return;
-
-        if (redirectUrl && redirectUrl !== window.location.href) {
-            showToast(t('Redirecting to') + ': ' + redirectUrl);
-            sessionStorage.removeItem('ccv-login-redirect-url');
-            window.location.replace(redirectUrl);
-        }
+        // Feature removed: no-op
     };
 
     const isSameCalendarMinute = (timestamp, now = Date.now()) => {
@@ -3264,11 +3314,6 @@ const CCVToolbar = (() => {
                 settings[key] = e.target.checked;
                 setScriptSettings(scriptPath, settings);
                 return;
-            }
-            if (e.target.id === 'ccv-login-redirect') {
-                config.loginRedirect = e.target.checked;
-                saveConfig();
-                showToast(config.loginRedirect ? t('Login redirect enabled') : t('Login redirect disabled'));
             }
         });
         document.addEventListener('mousemove', handleMouseMove);

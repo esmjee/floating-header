@@ -28,11 +28,6 @@
     "Compact": "Compact",
     "Minimized": "Geminimaliseerd",
     "Minimize": "Minimaliseren",
-    "Redirect after login": "Doorsturen na inloggen",
-    "Remembers the page you were trying to visit and redirects you there after logging in": "Onthoudt de pagina die je probeerde te bezoeken en stuurt je daarheen na het inloggen",
-    "Login redirect enabled": "Doorsturen na inloggen ingeschakeld",
-    "Login redirect disabled": "Doorsturen na inloggen uitgeschakeld",
-    "Login redirect": "Doorsturen na inloggen",
     "Lorem autofill": "Automatisch Lorem teksten genereren",
     "Lorem autofill enabled": "Lorem automatisch invullen ingeschakeld",
     "Lorem autofill disabled": "Lorem automatisch invullen uitgeschakeld",
@@ -182,6 +177,10 @@
     "Minimized click behavior": "Gedrag bij klikken op minimale toolbar",
     "Choose what should open when you click the minimized header.": "Kies wat er moet openen wanneer je op de minimale header klikt.",
     "Previous": "Vorige",
-    "Redirecting to": "Doorverwijzen naar"
+    "Redirecting to": "Doorverwijzen naar",
+    "Not required. This is used to create the link to the webshop theme end user settings.": "Niet verplicht. Dit wordt gebruikt om de link naar de end user instellingen van het thema te maken.",
+    "Variation ID (optional)": "Variatie ID (optioneel)",
+    "e.g. 141": "bijv. 141",
+    "Go to end user settings": "Ga naar end user instellingen"
 }
 
