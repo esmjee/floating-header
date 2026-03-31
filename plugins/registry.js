@@ -15,6 +15,13 @@
                 "path": "./plugins/scripts/login-autofill.js"
             }
         ],
+        "API/Docs": [
+            {
+                "name": "Copy API path",
+                "description": "Adds a copy icon next to every resource path on the API Docs page.",
+                "path": "./plugins/scripts/api-docs-copy-path.js"
+            }
+        ],
         "": [
             {
                 "name": "Lorem ipsum generator",
