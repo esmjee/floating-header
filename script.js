@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.16';
+    const VERSION = '2.1.17';
 
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
@@ -97,7 +97,9 @@ const CCVToolbar = (() => {
             { id: 'Mila_Music', name: 'Mila Music', color: '#34495e', themeId: 131, variationId: 20 },
             { id: 'Ceyda_Sieraden', name: 'Ceyda Sieraden', color: '#808080', themeId: 129, variationId: 4 }
         ],
-        infoBarPosition: 'center'
+        infoBarPosition: 'center',
+        autoUpdateOnStartup: true,
+        lastAutoUpdateCheckAt: 0
     };
 
     const itemColors = [
@@ -1046,19 +1048,32 @@ const CCVToolbar = (() => {
         return 0;
     };
 
-    const checkForUpdates = async () => {
+    const AUTO_UPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+    const markAutoUpdateCheckNow = () => {
+        config.lastAutoUpdateCheckAt = Date.now();
+        saveConfig();
+    };
+
+    const shouldRunAutoUpdateCheck = () => {
+        if (config.autoUpdateOnStartup === false) return false;
+        const lastCheckAt = Number(config.lastAutoUpdateCheckAt) || 0;
+        return Date.now() - lastCheckAt >= AUTO_UPDATE_INTERVAL_MS;
+    };
+
+    const checkForUpdates = async ({ silent = false } = {}) => {
         if (isLoaderPresent()) {
-            showToast(t('Checking for updates...'));
+            if (!silent) showToast(t('Checking for updates...'));
             window.dispatchEvent(new CustomEvent('ccv-loader-fetch'));
             return;
         }
         
         if (!UPDATE_URL_JS) {
-            showUpdateModal(null, t('No update URL configured in the script.'));
+            console.error(null, t('No update URL configured in the script.'));
             return;
         }
 
-        showToast(t('Checking for updates...'));
+        if (!silent) showToast(t('Checking for updates...'));
 
         try {
             const jsResponse = await fetch(UPDATE_URL_JS + '?t=' + Date.now(), { cache: 'no-store' });
@@ -1067,7 +1082,7 @@ const CCVToolbar = (() => {
             const remoteVersion = parseVersion(remoteScript);
             
             if (!remoteVersion) {
-                showUpdateModal(null, t('Could not determine remote version. The script URL may be invalid.'));
+                console.error(null, t('Could not determine remote version. The script URL may be invalid.'));
                 return;
             }
 
@@ -1087,15 +1102,26 @@ const CCVToolbar = (() => {
             
             if (comparison > 0) {
                 localStorage.removeItem('ccv-scripts-registry-cache');
-                showUpdateModal(remoteVersion);
+                showToast(t('New version detected, reload to update.'), true);
+                if (!silent) window.location.reload();
             } else if (comparison === 0) {
-                showToast(t('You have the latest version!') + ' (v' + VERSION + ')');
+                if (!silent) showToast(t('You have the latest version!') + ' (v' + VERSION + ')');
             } else {
-                showToast(t('Your version is newer than remote') + ' (v' + VERSION + ' > v' + remoteVersion + ')');
+                if (!silent) showToast(t('Your version is newer than remote') + ' (v' + VERSION + ' > v' + remoteVersion + ')');
             }
         } catch (error) {
-            showUpdateModal(null, t('Failed to check for updates: {0}', error.message));
+            if (!silent) {
+                console.error(null, t('Failed to check for updates: {0}', error.message));
+            } else {
+                console.warn('Auto-update check failed:', error);
+            }
         }
+    };
+
+    const runAutoUpdateCheckIfDue = async () => {
+        if (!shouldRunAutoUpdateCheck()) return;
+        markAutoUpdateCheckNow();
+        await checkForUpdates({ silent: true });
     };
     
     const setupLoaderListeners = () => {
@@ -1127,40 +1153,6 @@ const CCVToolbar = (() => {
                 showToast(t('Your version is newer than remote') + ` (v${VERSION} > v${remoteVersion})`);
             }
         });
-    };
-
-    const showUpdateModal = (newVersion, errorMessage = null) => {
-        let content;
-        
-        if (errorMessage) {
-            content = `
-                <div style="text-align: center; padding: 20px 0;">
-                    <div style="color: #ef4444; margin-bottom: 12px;">${icons.alert}</div>
-                    <p style="margin: 0; color: var(--ccv-text);">${errorMessage}</p>
-                </div>
-            `;
-            createModal(t('Update Error'), content, null);
-            return;
-        }
-
-        content = `
-            <div style="text-align: center; padding: 10px 0;">
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <p style="margin: 0 0 8px 0; color: var(--ccv-text); font-weight: 600;">${t('Update available')}!</p>
-                    <p style="margin: 0 0 16px 0; color: var(--ccv-text-muted); font-size: 12px;">v${VERSION} → v${newVersion}</p>
-                </div>
-                <p style="margin: 0 0 16px 0; color: var(--ccv-text); font-size: 13px;">
-                    ${t('Install the Tampermonkey loader for automatic updates.')}
-                </p>
-                <a href="https://github.com/esmjee/floating-header#installation" target="_blank" class="ccv-btn ccv-btn-primary" style="width: 100%; justify-content: center; text-decoration: none;">
-                    ${icons.link}<span style="margin-left: 6px;">${t('View Installation Guide')}</span>
-                </a>
-            </div>
-        `;
-
-        const modal = createModal(t('Update available'), content, null);
-        const saveBtn = modal.querySelector('[data-action="save-modal"]');
-        if (saveBtn) saveBtn.style.display = 'none';
     };
 
     const navigateUrl = (url, domain = null) => {
@@ -1473,6 +1465,16 @@ const CCVToolbar = (() => {
                     <div class="ccv-settings-group">
                         <label class="ccv-settings-label">${t('Updates')}</label>
                         <span class="ccv-hint">${t('Manage and check for new versions of this toolbar.')}</span>
+                        <div class="ccv-defaults-toggle-row" style="margin-top: 8px;">
+                            <div class="ccv-defaults-toggle-info">
+                                <span class="ccv-defaults-toggle-title">${t('Auto-check for updates')}</span>
+                                <span class="ccv-defaults-toggle-desc">${t('Check automatically on startup (once every 24 hours)')}</span>
+                            </div>
+                            <label class="ccv-toggle">
+                                <input type="checkbox" id="ccv-auto-update-on-startup" ${config.autoUpdateOnStartup ? 'checked' : ''}>
+                                <span class="ccv-toggle-slider"></span>
+                            </label>
+                        </div>
                         <span class="ccv-hint">${t('Current version')}: v${VERSION}</span>
                         <button class="ccv-btn ccv-btn-primary" data-action="check-updates" style="margin-top: 8px; width: 100%; justify-content: center;">${icons.refresh}<span>${t('Check for Updates')}</span></button>
                     </div>
@@ -3083,11 +3085,12 @@ const CCVToolbar = (() => {
 
     const init = async () => {
         loadConfig();
-        
+
         redirectAfterLogin();
         await loadTranslations(config.language);
         applyPendingThemeAfterLogin();
         setupLoaderListeners();
+        await runAutoUpdateCheckIfDue();
 
         const shouldBeHidden = config.initialView === 'hidden' || !config.visible;
         config.expanded = config.initialView !== 'compact';
@@ -3302,6 +3305,11 @@ const CCVToolbar = (() => {
                     updateDefaultsStatus();
                     showToast(t('Using custom config for this domain'));
                 }
+            }
+            if (e.target.id === 'ccv-auto-update-on-startup') {
+                config.autoUpdateOnStartup = e.target.checked;
+                saveConfig();
+                return;
             }
             const scriptPath = elements.toolbar?.querySelector('#ccv-script-detail-body')?.dataset?.currentScriptPath;
             if (scriptPath) {
