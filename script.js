@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.17';
+    const VERSION = '2.1.18';
 
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
@@ -1061,7 +1061,9 @@ const CCVToolbar = (() => {
         return Date.now() - lastCheckAt >= AUTO_UPDATE_INTERVAL_MS;
     };
 
-    const checkForUpdates = async ({ silent = false } = {}) => {
+    const checkForUpdates = async (silent = false) => {
+        markAutoUpdateCheckNow();
+        
         if (isLoaderPresent()) {
             if (!silent) showToast(t('Checking for updates...'));
             window.dispatchEvent(new CustomEvent('ccv-loader-fetch'));
@@ -1120,8 +1122,9 @@ const CCVToolbar = (() => {
 
     const runAutoUpdateCheckIfDue = async () => {
         if (!shouldRunAutoUpdateCheck()) return;
-        markAutoUpdateCheckNow();
-        await checkForUpdates({ silent: true });
+
+        const silent = true;
+        await checkForUpdates(silent);
     };
     
     const setupLoaderListeners = () => {
@@ -1981,6 +1984,7 @@ const CCVToolbar = (() => {
             compactLayout: config.compactLayout,
             compactAlign: config.compactAlign,
             initialView: config.initialView,
+            autoUpdateOnStartup: config.autoUpdateOnStartup,
             minimizedClickBehavior: config.minimizedClickBehavior,
             webshopThemes: config.webshopThemes,
             customColors: config.customColors,
@@ -2001,6 +2005,7 @@ const CCVToolbar = (() => {
             if (data.mode) config.mode = data.mode;
             if (data.color) config.color = data.color;
             if (data.compactLayout) config.compactLayout = data.compactLayout;
+            if (data.autoUpdateOnStartup) config.autoUpdateOnStartup = data.autoUpdateOnStartup;
             if (data.compactAlign) config.compactAlign = data.compactAlign;
             if (data.initialView) config.initialView = data.initialView;
             if (data.minimizedClickBehavior) config.minimizedClickBehavior = data.minimizedClickBehavior;
@@ -2026,6 +2031,7 @@ const CCVToolbar = (() => {
             mode: config.mode,
             color: config.color,
             compactLayout: config.compactLayout,
+            autoUpdateOnStartup: config.autoUpdateOnStartup,
             compactAlign: config.compactAlign,
             initialView: config.initialView,
             minimizedClickBehavior: config.minimizedClickBehavior,
@@ -2062,8 +2068,7 @@ const CCVToolbar = (() => {
                     if (data.urls) config.urls = data.urls;
                     if (data.mode) config.mode = data.mode;
                     if (data.color) config.color = data.color;
-                    if (data.compactLayout) config.compactLayout = data.compactLayout;
-                    if (data.initialView) config.initialView = data.initialView;
+                    if (data.autoUpdateOnStartup) config.autoUpdateOnStartup = data.autoUpdateOnStartup;
                     if (data.webshopThemes) config.webshopThemes = data.webshopThemes;
                     if (data.customColors) config.customColors = data.customColors;
                     if (data.position) config.position = data.position;
