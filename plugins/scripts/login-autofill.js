@@ -19,6 +19,11 @@ class LoginAutofillScript extends CCVScriptBase {
         const currentPath = window.location.pathname.toLowerCase();
         if (!currentPath.includes('/onderhoud/login.php')) return;
 
+        const hostname = window.location.hostname;
+        const subdomain = this._getSubdomainFromHostname(hostname);
+
+        if (subdomain === 'biedmeersystem') return;
+
         const usernameInput = document.querySelector('#Username');
         const passwordInput = document.querySelector('#Password');
         if (!usernameInput || !passwordInput) return;
@@ -26,9 +31,6 @@ class LoginAutofillScript extends CCVScriptBase {
         const usernameEmpty = usernameInput.value.trim() === '';
         const passwordEmpty = passwordInput.value.trim() === '';
         if (!usernameEmpty || !passwordEmpty) return;
-
-        const hostname = window.location.hostname;
-        const subdomain = this._getSubdomainFromHostname(hostname);
 
         if (subdomain.endsWith('-ctf')) {
             usernameInput.value = 'demo';
