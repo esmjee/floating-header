@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.19';
+    const VERSION = '2.1.20';
 
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
@@ -1123,24 +1123,23 @@ const CCVToolbar = (() => {
     const runAutoUpdateCheckIfDue = async () => {
         if (!shouldRunAutoUpdateCheck()) return;
 
-        const silent = true;
-        await checkForUpdates(silent);
+        await checkForUpdates(true);
     };
     
-    const setupLoaderListeners = () => {
+    const setupLoaderListeners = (silent = false) => {
         if (!isLoaderPresent()) return;
         
         window.addEventListener('ccv-loader-response', (e) => {
             const { success, script, error } = e.detail;
             
             if (!success) {
-                showToast(t('Update failed: {0}', error || 'Unknown error'));
+                if (!silent) showToast(t('Update failed: {0}', error || 'Unknown error'));
                 return;
             }
             
             const remoteVersion = parseVersion(script);
             if (!remoteVersion) {
-                showToast(t('Could not determine remote version'));
+                if (!silent) showToast(t('Could not determine remote version'));
                 return;
             }
             
@@ -1149,11 +1148,11 @@ const CCVToolbar = (() => {
             if (comparison > 0) {
                 localStorage.removeItem('ccv-scripts-registry-cache');
                 showToast(t('Update installed! Reloading...') + ` (v${VERSION} → v${remoteVersion})`);
-                setTimeout(() => window.location.reload(), 1500);
+                if (!silent) setTimeout(() => window.location.reload(), 1500);
             } else if (comparison === 0) {
-                showToast(t('You have the latest version!') + ' (v' + VERSION + ')');
+                if (!silent) showToast(t('You have the latest version!') + ' (v' + VERSION + ')');
             } else {
-                showToast(t('Your version is newer than remote') + ` (v${VERSION} > v${remoteVersion})`);
+                if (!silent) showToast(t('Your version is newer than remote') + ` (v${VERSION} > v${remoteVersion})`);
             }
         });
     };
@@ -3094,7 +3093,7 @@ const CCVToolbar = (() => {
         redirectAfterLogin();
         await loadTranslations(config.language);
         applyPendingThemeAfterLogin();
-        setupLoaderListeners();
+        setupLoaderListeners(true);
         await runAutoUpdateCheckIfDue();
 
         const shouldBeHidden = config.initialView === 'hidden' || !config.visible;
