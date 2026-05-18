@@ -51,6 +51,11 @@
     "Custom settings for this domain": "Aangepaste instellingen voor dit domein",
     "Save Current as Default": "Huidige Opslaan als Standaard",
     "Data": "Data",
+    "API": "API",
+    "Store your CCV Shop API credentials for use by toolbar features.": "Sla je CCV Shop API-gegevens op voor gebruik door toolbarfuncties.",
+    "API requests use the current shop as the domain": "API-verzoeken gebruiken de huidige webshop als domein",
+    "Public key": "Publieke sleutel",
+    "Private key": "Privésleutel",
     "Export or import all toolbar configuration as JSON.": "Exporteer of importeer de volledige toolbarconfiguratie als JSON.",
     "Export": "Exporteren",
     "Import": "Importeren",
@@ -184,6 +189,20 @@
     "Not required. This is used to create the link to the webshop theme end user settings.": "Niet verplicht. Dit wordt gebruikt om de link naar de end user instellingen van het thema te maken.",
     "Variation ID (optional)": "Variatie ID (optioneel)",
     "e.g. 141": "bijv. 141",
-    "Go to end user settings": "Ga naar end user instellingen"
+    "Go to end user settings": "Ga naar end user instellingen",
+
+    "Compound products creator": "Samengestelde producten",
+    "Create PC compound product": "PC-samenstelling aanmaken",
+    "Creates PC child products via the REST API, then a new compound product in admin. Requires API keys in Settings and an admin login.": "Maakt PC-onderdelen aan via de REST API en daarna een nieuw samengesteld product in het beheer. Vereist API-sleutels in Instellingen en een beheerlogin.",
+    "Configure API keys in Settings before creating products.": "Configureer API-sleutels in Instellingen voordat je producten aanmaakt.",
+    "Loading compound product data…": "Samengestelde productgegevens laden…",
+    "Creating {0} of {1}: {2}": "Aanmaken {0} van {1}: {2}",
+    "Creating compound product…": "Samengesteld product aanmaken…",
+    "Compound product created (ID {0}).": "Samengesteld product aangemaakt (ID {0}).",
+    "Compound product created. {0}": "Samengesteld product aangemaakt. {0}",
+    "Open in admin": "Openen in beheer",
+    "Compound product creation failed: {0}": "Samengesteld product aanmaken mislukt: {0}",
+    "Failed: {0}": "Mislukt: {0}",
+    "Login required.": "Inloggen vereist."
 }
 
