@@ -197,6 +197,7 @@
     "Configure API keys in Settings before creating products.": "Configureer API-sleutels in Instellingen voordat je producten aanmaakt.",
     "Loading compound product data…": "Samengestelde productgegevens laden…",
     "Creating {0} of {1}: {2}": "Aanmaken {0} van {1}: {2}",
+    "Ensuring category: {0}": "Categorie controleren: {0}",
     "Creating compound product…": "Samengesteld product aanmaken…",
     "Compound product created (ID {0}).": "Samengesteld product aangemaakt (ID {0}).",
     "Compound product created. {0}": "Samengesteld product aangemaakt. {0}",

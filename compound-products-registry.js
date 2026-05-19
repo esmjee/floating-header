@@ -5,6 +5,7 @@
     'use strict';
 
     const COMPOUND_LANGS = ['nl', 'de', 'en', 'it', 'tr', 'es'];
+    const COMPOUND_CATEGORY_NAME = 'Samengestelde Producten';
 
     const DEFAULT_LANGUAGE_TEMPLATES = {
         nl: { name: 'Eigen X samenstellen', short: 'Stel je eigen X samen', desc: 'Je kan hier je eigen X samenstellen.' },
@@ -41,8 +42,7 @@
         PC: {
             type: 'compound',
             productId: '878057041',
-            categoryId: '1082307',
-            categoryPath: 'Protom',
+            categoryName: COMPOUND_CATEGORY_NAME,
             packageId: '29449',
             price: 50,
             photoId: '1004181835',
@@ -123,8 +123,31 @@
             .replace(/^-|-$/g, '');
     }
 
+    function buildCategoryJson(categoryId, categoryPath, productId, isAdd, linkId) {
+        const entry = {
+            Category: String(categoryId),
+            Product: String(productId),
+            Position: '1',
+            MaxPosition: 1,
+            NumberOfChildren: isAdd ? 0 : 26,
+            OrderBy: '2',
+            ShowOnWebsite: 'Y',
+            UUID: '',
+            Path: categoryPath || COMPOUND_CATEGORY_NAME,
+            Type: 'Current'
+        };
+        if (!isAdd && linkId) {
+            entry.Id = String(linkId);
+        }
+        return JSON.stringify([entry]);
+    }
+
     function extractAdminFormErrors(html) {
-        if (!html || html.indexOf('niet opgeslagen') === -1) return null;
+        if (!html) return null;
+        if (/E_USER_ERROR|is not a valid Id/i.test(html)) {
+            return 'Category save failed (invalid category link). Ensure the compound category exists and CategoryJSON has no empty Id on add.';
+        }
+        if (html.indexOf('niet opgeslagen') === -1) return null;
         const errors = [];
         const re = /<span>([^<:]+):\s*<em>([^<]+)<\/em>\s*<\/span>/gi;
         let match;
@@ -265,13 +288,18 @@
         const priceInc = (price * 1.21).toFixed(2);
         const priceIncFormat = priceInc.replace('.', ',');
         const categoryId = overrides.categoryId != null ? overrides.categoryId : reg.categoryId;
-        const categoryPath = overrides.categoryPath != null ? overrides.categoryPath : reg.categoryPath;
+        const categoryPath = overrides.categoryPath != null
+            ? overrides.categoryPath
+            : (reg.categoryPath || reg.categoryName || COMPOUND_CATEGORY_NAME);
+        if (!categoryId) {
+            throw new Error('categoryId is required (ensure compound category exists)');
+        }
         const packageId = overrides.packageId != null ? overrides.packageId : reg.packageId;
         const compoundElementsJson = overrides.compoundElementsJson != null ? overrides.compoundElementsJson : reg.compoundElementsJson;
         const photoId = overrides.photoId != null ? overrides.photoId : (reg.photoId || '');
 
         if (reg.type === 'compound') {
-            const categoryJson = '[{"Id":"","Category":"' + categoryId + '","Product":"' + id + '","Position":"1","MaxPosition":1,"NumberOfChildren":26,"OrderBy":"2","ShowOnWebsite":"Y","UUID":"","Path":"' + categoryPath + '","Type":"Current"}]';
+            const categoryJson = buildCategoryJson(categoryId, categoryPath, id, isAdd, overrides.categoryLinkId);
             const staggeredJson = '[{"Id":"fixed","ProductId":"' + id + '","Number":1,"Price":' + priceStr + ',"Discount":0,"SellPrice":' + priceStr + ',"TAX":21,"TaxTariff":"NORMAL","StaggeredPrice":' + priceStr + ',"StaggeredSellPrice":' + priceStr + ',"OriginalDiscount":"0.00","Price_Format":"' + priceFormat + '","Price_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","Price_Inc":' + priceInc + ',"Price_Inc_Format":"' + priceIncFormat + '","Price_Inc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceIncFormat + '","Price_Exc":' + priceStr + ',"Price_Exc_Format":"' + priceFormat + '","Price_Exc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","Discount_Format":"0,00","Discount_FormatWithCurrency":"&#x20ac;&#x00a0;0,00","Discount_Inc":0,"Discount_Inc_Format":"0,00","Discount_Inc_FormatWithCurrency":"&#x20ac;&#x00a0;0,00","Discount_Exc":0,"Discount_Exc_Format":"0,00","Discount_Exc_FormatWithCurrency":"&#x20ac;&#x00a0;0,00","SellPrice_Format":"' + priceFormat + '","SellPrice_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","SellPrice_Inc":' + priceInc + ',"SellPrice_Inc_Format":"' + priceIncFormat + '","SellPrice_Inc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceIncFormat + '","SellPrice_Exc":' + priceStr + ',"SellPrice_Exc_Format":"' + priceFormat + '","SellPrice_Exc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","StaggeredPrice_Format":"' + priceFormat + '","StaggeredPrice_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","StaggeredPrice_Inc":' + priceInc + ',"StaggeredPrice_Inc_Format":"' + priceIncFormat + '","StaggeredPrice_Inc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceIncFormat + '","StaggeredPrice_Exc":' + priceStr + ',"StaggeredPrice_Exc_Format":"' + priceFormat + '","StaggeredPrice_Exc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","StaggeredSellPrice_Format":"' + priceFormat + '","StaggeredSellPrice_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","StaggeredSellPrice_Inc":' + priceInc + ',"StaggeredSellPrice_Inc_Format":"' + priceIncFormat + '","StaggeredSellPrice_Inc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceIncFormat + '","StaggeredSellPrice_Exc":' + priceStr + ',"StaggeredSellPrice_Exc_Format":"' + priceFormat + '","StaggeredSellPrice_Exc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","OriginalStaggeredPriceSellPrice":"' + priceStr + '.00","OriginalDiscount_Format":"0,00","OriginalDiscount_FormatWithCurrency":"&#x20ac;&#x00a0;0,00","OriginalDiscount_Inc":0,"OriginalDiscount_Inc_Format":"0,00","OriginalDiscount_Inc_FormatWithCurrency":"&#x20ac;&#x00a0;0,00","OriginalDiscount_Exc":0,"OriginalDiscount_Exc_Format":"0,00","OriginalDiscount_Exc_FormatWithCurrency":"&#x20ac;&#x00a0;0,00","TotalPrice":"' + priceFormat + '"}]';
             const photoJson = isAdd ? '[]' : '[{"Id":"' + photoId + '","Product":"' + id + '","Extension":".jpg","MainPhoto":"Y","Alt":"","Position":"1","Type":"Current"}]';
             const fields = [
@@ -355,6 +383,7 @@
     if (typeof window !== 'undefined') {
         window.CCVCompoundProducts = {
             COMPOUND_LANGS: COMPOUND_LANGS,
+            COMPOUND_CATEGORY_NAME: COMPOUND_CATEGORY_NAME,
             PRODUCT_REGISTRY: PRODUCT_REGISTRY,
             PC_CHILD_PRODUCTS: PC_CHILD_PRODUCTS,
             COMPOUND_ELEMENTS_PC: COMPOUND_ELEMENTS_PC,
@@ -362,6 +391,7 @@
             getBaseUrl: getBaseUrl,
             getAddCompoundProductUrl: getAddCompoundProductUrl,
             buildFormData: buildFormData,
+            buildCategoryJson: buildCategoryJson,
             getProductIdFromResponse: getProductIdFromResponse,
             extractProductIdFromText: extractProductIdFromText,
             extractAdminFormErrors: extractAdminFormErrors,
