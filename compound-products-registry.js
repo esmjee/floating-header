@@ -4,6 +4,8 @@
 (function () {
     'use strict';
 
+    const REGISTRY_VERSION = 3;
+
     const COMPOUND_LANGS = ['nl', 'de', 'en', 'it', 'tr', 'es'];
     const COMPOUND_CATEGORY_NAME = 'Samengestelde Producten';
 
@@ -287,7 +289,7 @@
         const priceFormat = price.toFixed(2).replace('.', ',');
         const priceInc = (price * 1.21).toFixed(2);
         const priceIncFormat = priceInc.replace('.', ',');
-        const linkCategoryViaApi = overrides.linkCategoryViaApi === true;
+        const linkCategoryViaApi = overrides.linkCategoryViaApi === true || isAdd;
         const categoryId = overrides.categoryId != null ? overrides.categoryId : reg.categoryId;
         const categoryPath = overrides.categoryPath != null
             ? overrides.categoryPath
@@ -385,6 +387,7 @@
 
     if (typeof window !== 'undefined') {
         window.CCVCompoundProducts = {
+            REGISTRY_VERSION: REGISTRY_VERSION,
             COMPOUND_LANGS: COMPOUND_LANGS,
             COMPOUND_CATEGORY_NAME: COMPOUND_CATEGORY_NAME,
             PRODUCT_REGISTRY: PRODUCT_REGISTRY,

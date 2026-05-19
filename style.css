@@ -600,6 +600,65 @@
     margin-bottom: 10px;
 }
 
+#ccv-toolbar .ccv-api-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+#ccv-toolbar .ccv-api-field .ccv-defaults-toggle-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+#ccv-toolbar .ccv-api-field .ccv-defaults-toggle-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ccv-text);
+}
+
+#ccv-toolbar .ccv-api-field .ccv-defaults-toggle-desc {
+    font-size: 10px;
+    color: var(--ccv-text-muted);
+    line-height: 1.4;
+}
+
+#ccv-toolbar .ccv-api-field .ccv-defaults-toggle-desc code {
+    font-size: inherit;
+    color: inherit;
+    background: transparent;
+    padding: 0;
+}
+
+#ccv-toolbar .ccv-api-input {
+    display: block;
+    width: 100%;
+    padding: 6px 8px;
+    background: var(--ccv-surface);
+    border: 1px solid var(--ccv-border);
+    border-radius: var(--ccv-radius-sm);
+    color: var(--ccv-text);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
+    transition: all var(--ccv-transition);
+    box-sizing: border-box;
+
+    &:focus {
+        outline: none;
+        border-color: var(--ccv-accent);
+        box-shadow: 0 0 0 3px var(--ccv-accent-glow);
+    }
+
+    &::placeholder {
+        color: var(--ccv-text-muted);
+        font-weight: 400;
+    }
+}
+
 #ccv-toolbar .ccv-theme-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -675,6 +734,21 @@
 #ccv-toolbar .ccv-btn-full {
     width: 100%;
     justify-content: center;
+}
+
+#ccv-toolbar .ccv-compound-creator-status {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--ccv-text-secondary, #666);
+}
+
+#ccv-toolbar .ccv-compound-creator-status-error {
+    color: var(--ccv-danger, #dc3545);
+}
+
+#ccv-toolbar .ccv-compound-creator-busy {
+    opacity: 0.7;
+    pointer-events: none;
 }
 
 #ccv-toolbar .ccv-btn-primary {

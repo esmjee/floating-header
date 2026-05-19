@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.20';
+    const VERSION = '2.1.3';
 
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
@@ -99,7 +99,9 @@ const CCVToolbar = (() => {
         ],
         infoBarPosition: 'center',
         autoUpdateOnStartup: true,
-        lastAutoUpdateCheckAt: 0
+        lastAutoUpdateCheckAt: 0,
+        apiPublicKey: 'demo',
+        apiPrivateKey: 'demo'
     };
 
     const itemColors = [
@@ -134,7 +136,6 @@ const CCVToolbar = (() => {
     let dragOffset = { x: 0, y: 0 };
     let lastExpandedBeforeMinimize = null;
     let lastExpandedWidth = null;
-    let currentTab = 'links';
     let elements = {};
 
     const icons = {
@@ -484,6 +485,48 @@ const CCVToolbar = (() => {
             return window.location.origin + path + 'languages/';
         }
         return LANGUAGES_URL + '/';
+    };
+
+    const getToolbarAssetBaseUrl = () => {
+        if (isDevelopmentEnv()) {
+            const path = window.location.pathname.replace(/\/[^/]*$/, '/');
+            return window.location.origin + path;
+        }
+        return UPDATE_URL_JS.replace(/\/[^/]+$/, '/');
+    };
+
+    let compoundRegistryLoadPromise = null;
+
+    const COMPOUND_REGISTRY_MIN_VERSION = 3;
+
+    const ensureCompoundProductsRegistry = () => {
+        const existing = window.CCVCompoundProducts;
+        if (existing && (existing.REGISTRY_VERSION || 0) >= COMPOUND_REGISTRY_MIN_VERSION) {
+            return Promise.resolve(existing);
+        }
+        if (existing) {
+            delete window.CCVCompoundProducts;
+            compoundRegistryLoadPromise = null;
+        }
+        if (compoundRegistryLoadPromise) return compoundRegistryLoadPromise;
+        const url = getToolbarAssetBaseUrl() + 'compound-products-registry.js?v=' + COMPOUND_REGISTRY_MIN_VERSION;
+        compoundRegistryLoadPromise = fetch(url, { cache: 'no-store' })
+            .then((r) => {
+                if (!r.ok) throw new Error('Failed to load compound-products-registry.js');
+                return r.text();
+            })
+            .then((code) => {
+                const el = document.createElement('script');
+                el.textContent = code;
+                (document.head || document.documentElement).appendChild(el);
+                if (!window.CCVCompoundProducts) throw new Error('CCVCompoundProducts not defined');
+                return window.CCVCompoundProducts;
+            })
+            .catch((err) => {
+                compoundRegistryLoadPromise = null;
+                throw err;
+            });
+        return compoundRegistryLoadPromise;
     };
 
     let scriptsRegistry = null;
@@ -1178,6 +1221,345 @@ const CCVToolbar = (() => {
     };
 
     let themeSwitchingInProgress = false;
+    let compoundCreatorInProgress = false;
+
+    const toIsoUtcTimestamp = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+    const ccvApiHash = async (publicKey, secretKey, method, uri, data) => {
+        const timestamp = toIsoUtcTimestamp();
+        const hashString = `${publicKey}|${method}|${uri}|${data}|${timestamp}`;
+        const key = await crypto.subtle.importKey(
+            'raw',
+            new TextEncoder().encode(secretKey),
+            { name: 'HMAC', hash: 'SHA-512' },
+            false,
+            ['sign']
+        );
+        const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(hashString));
+        const hash = Array.from(new Uint8Array(sig))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('');
+        return { timestamp, hash };
+    };
+
+    const ccvApiRequest = async (method, uri, bodyObj) => {
+        const publicKey = (config.apiPublicKey || '').trim();
+        const secretKey = (config.apiPrivateKey || '').trim();
+        if (!publicKey || !secretKey) {
+            throw new Error('API credentials missing');
+        }
+        const data = bodyObj != null ? JSON.stringify(bodyObj) : '';
+        const { timestamp, hash } = await ccvApiHash(publicKey, secretKey, method, uri, data);
+        const url = `${window.location.origin}${uri}`;
+        const res = await fetch(url, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'x-public': publicKey,
+                'x-date': timestamp,
+                'x-hash': hash
+            },
+            body: method === 'GET' || method === 'DELETE' ? undefined : data
+        });
+        let json = null;
+        const text = await res.text();
+        if (text) {
+            try {
+                json = JSON.parse(text);
+            } catch (e) {
+                json = { raw: text };
+            }
+        }
+        if (!res.ok) {
+            const err = new Error(json && json.message ? json.message : `API ${res.status}`);
+            err.status = res.status;
+            err.body = json;
+            throw err;
+        }
+        return json;
+    };
+
+    const createProductViaApi = async (spec, packageId) => {
+        const body = {
+            productnumber: spec.productNumber,
+            active: true,
+            name: spec.name,
+            shortdescription: spec.shortDescription || spec.name,
+            description: spec.description || spec.name,
+            taxtariff: 'normal',
+            price: Number(spec.price) || 0,
+            discount: 0,
+            package_id: parseInt(packageId, 10) || 1
+        };
+        return ccvApiRequest('POST', '/api/rest/v1/products/', body);
+    };
+
+    const uploadProductPhotoViaApi = async (productId, base64Source, fileType) => {
+        const body = {
+            file_type: fileType || 'jpg',
+            source: base64Source,
+            is_mainphoto: true
+        };
+        return ccvApiRequest('POST', `/api/rest/v1/products/${productId}/productphotos/`, body);
+    };
+
+    const fetchProductImageBase64 = async (filename) => {
+        const url = `${getToolbarAssetBaseUrl()}product_images/${filename}`;
+        const res = await fetch(url, { cache: 'default' });
+        if (!res.ok) throw new Error(`Failed to load image ${filename}`);
+        const blob = await res.blob();
+        const buffer = await blob.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    };
+
+    const setCompoundCreatorStatus = (text, isError) => {
+        const el = document.getElementById('ccv-compound-creator-status');
+        if (!el) return;
+        el.textContent = text || '';
+        el.className = 'ccv-compound-creator-status' + (isError ? ' ccv-compound-creator-status-error' : '');
+    };
+
+    const setCompoundCreatorBusy = (busy) => {
+        compoundCreatorInProgress = busy;
+        const section = document.getElementById('ccv-compound-creator-section');
+        const btn = document.getElementById('ccv-compound-creator-btn');
+        if (btn) btn.disabled = busy;
+        if (section) section.classList.toggle('ccv-compound-creator-busy', busy);
+    };
+
+    const slugifyCategoryAlias = (name) => String(name)
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
+    const findCategoryByName = async (name) => {
+        const target = String(name).trim();
+        let start = 0;
+        const size = 100;
+        while (true) {
+            const uri = `/api/rest/v1/categories/?start=${start}&size=${size}`;
+            const data = await ccvApiRequest('GET', uri);
+            if (!data || !data.items || !data.items.length) break;
+            for (let i = 0; i < data.items.length; i++) {
+                const item = data.items[i];
+                if (item.name && String(item.name).trim() === target) {
+                    return {
+                        id: String(item.id),
+                        path: item.name,
+                        alias: item.alias || slugifyCategoryAlias(item.name)
+                    };
+                }
+            }
+            if (!data.next || data.items.length < size) break;
+            start += size;
+        }
+        return null;
+    };
+
+    const createCategoryViaApi = async (name) => {
+        const body = {
+            name,
+            show_on_website: true,
+            alias: slugifyCategoryAlias(name)
+        };
+        const created = await ccvApiRequest('POST', '/api/rest/v1/categories/', body);
+        let id = created && (created.id || created.Id);
+        if (!id && created && created.href) {
+            const hrefMatch = String(created.href).match(/\/categories\/(\d+)\/?/);
+            if (hrefMatch) id = hrefMatch[1];
+        }
+        if (!id) {
+            const detail = created && created.message ? created.message : '';
+            throw new Error(`Category API create failed for "${name}"${detail ? ': ' + detail : ''}`);
+        }
+        return { id: String(id), path: name, alias: body.alias, created: true };
+    };
+
+    const ensureCompoundCategory = async (categoryName) => {
+        const existing = await findCategoryByName(categoryName);
+        if (existing) {
+            return Object.assign({ created: false }, existing);
+        }
+        return createCategoryViaApi(categoryName);
+    };
+
+    const linkProductToCategoryViaApi = async (productId, categoryId) => {
+        await ccvApiRequest('POST', '/api/rest/v1/producttocategories/', {
+            product_id: parseInt(productId, 10),
+            category_id: parseInt(categoryId, 10),
+            position: 1
+        });
+    };
+
+    const lookupProductIdByNumber = async (productNumber) => {
+        const uri = `/api/rest/v1/products/?productnumber=${encodeURIComponent(productNumber)}&size=1`;
+        const data = await ccvApiRequest('GET', uri);
+        if (data && data.items && data.items.length > 0 && data.items[0].id) {
+            return String(data.items[0].id);
+        }
+        return null;
+    };
+
+    const submitCompoundProduct = async (fields, mainImageBlob, productNumber) => {
+        const CP = window.CCVCompoundProducts;
+        const fd = CP.buildFormData(fields);
+        if (mainImageBlob) {
+            fd.append('qqfile', mainImageBlob, 'pc-main.jpg');
+        }
+        const url = CP.getAddCompoundProductUrl();
+        const res = await fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            redirect: 'follow',
+            body: fd
+        });
+        const html = await res.text();
+        const validationMsg = CP.extractAdminFormErrors(html);
+        if (validationMsg) {
+            throw new Error(validationMsg);
+        }
+        if (!res.ok) {
+            throw new Error(`Compound save failed (HTTP ${res.status})`);
+        }
+        let id = CP.extractProductIdFromText(html) || CP.extractProductIdFromText(res.url || '');
+        if (!id && productNumber) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            id = await lookupProductIdByNumber(productNumber);
+        }
+        if (!id) {
+            throw new Error('Could not read compound product id from response');
+        }
+        return id;
+    };
+
+    const runCompoundProductsCreator = async () => {
+        if (compoundCreatorInProgress) return;
+
+        const publicKey = (config.apiPublicKey || '').trim();
+        const privateKey = (config.apiPrivateKey || '').trim();
+        if (!publicKey || !privateKey) {
+            showToast(t('Configure API keys in Settings before creating products.'));
+            return;
+        }
+
+        setCompoundCreatorBusy(true);
+        setCompoundCreatorStatus(t('Loading compound product data…'), false);
+
+        try {
+            const CP = await ensureCompoundProductsRegistry();
+            const reg = CP.PRODUCT_REGISTRY.PC;
+            if (!reg || !reg.childProducts || !reg.childProducts.length) {
+                throw new Error('PC product registry not found');
+            }
+
+            const isLoggedIn = await checkBackendLogin();
+            if (!isLoggedIn) {
+                const loginUrl = `${window.location.origin}/onderhoud/Login.php`;
+                showToast(t('Login required to use this feature. Click {0} to login.', `<a href="${loginUrl}" target="_blank">${t('here')}</a>`), true);
+                setCompoundCreatorStatus(t('Login required.'), true);
+                return;
+            }
+
+            const runId = Date.now();
+            const compoundProductNumber = `PC-${runId}`;
+            const idMap = {};
+            const children = reg.childProducts;
+            const total = children.length;
+
+            const categoryName = reg.categoryName || CP.COMPOUND_CATEGORY_NAME || 'Samengestelde Producten';
+            setCompoundCreatorStatus(t('Creating category via API: {0}', categoryName), false);
+            const category = await ensureCompoundCategory(categoryName);
+            if (category.created) {
+                setCompoundCreatorStatus(t('Category created (ID {0}).', category.id), false);
+                await new Promise((resolve) => setTimeout(resolve, 300));
+            }
+
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i];
+                const productNumber = `PC-${child.key}-${runId}`;
+                const name = CP.getChildApiName(child);
+                setCompoundCreatorStatus(t('Creating {0} of {1}: {2}', i + 1, total, productNumber), false);
+
+                const created = await createProductViaApi({
+                    productNumber,
+                    name,
+                    shortDescription: name,
+                    description: name,
+                    price: child.price
+                }, reg.packageId);
+
+                let productId = created && (created.id || created.Id);
+                if (!productId && created && created.href) {
+                    const hrefMatch = String(created.href).match(/\/products\/(\d+)\/?/);
+                    if (hrefMatch) productId = hrefMatch[1];
+                }
+                if (!productId) {
+                    throw new Error(`No product id returned for ${productNumber}`);
+                }
+
+                const imageFile = child.imageFile || `pc-ram-${(i % 4) + 1}.jpg`;
+                const base64 = await fetchProductImageBase64(imageFile);
+                await uploadProductPhotoViaApi(productId, base64, 'jpg');
+                idMap[child.key] = String(productId);
+
+                if (i < children.length - 1) {
+                    await new Promise((resolve) => setTimeout(resolve, 350));
+                }
+            }
+
+            setCompoundCreatorStatus(t('Creating compound product…'), false);
+            const compoundElementsJson = CP.remapCompoundElementsProductIds(
+                CP.COMPOUND_ELEMENTS_PC,
+                idMap,
+                '0',
+                CP.COMPOUND_LANGS,
+                true
+            );
+
+            const compoundObj = CP.GenerateProductObject('PC', {
+                enabledLanguages: CP.COMPOUND_LANGS,
+                productId: '0',
+                mode: 'Add',
+                productNumber: compoundProductNumber,
+                compoundElementsJson,
+                linkCategoryViaApi: true,
+                categoryId: category.id,
+                categoryPath: category.path
+            });
+
+            const mainImageBlob = await fetch(`${getToolbarAssetBaseUrl()}product_images/${reg.mainImageFile || 'pc-main.jpg'}`)
+                .then((r) => {
+                    if (!r.ok) throw new Error('Failed to load compound main image');
+                    return r.blob();
+                });
+
+            const compoundId = await submitCompoundProduct(compoundObj.fields, mainImageBlob, compoundProductNumber);
+
+            setCompoundCreatorStatus(t('Linking product to category via API…'), false);
+            await linkProductToCategoryViaApi(compoundId, category.id);
+
+            const adminUrl = `${CP.getBaseUrl()}/AdminItems/ProductManagement/ShowProducts.php?Product=${compoundId}`;
+            setCompoundCreatorStatus(t('Compound product created (ID {0}).', compoundId), false);
+            showToast(
+                t('Compound product created. {0}', `<a href="${adminUrl}" target="_blank" rel="noopener">${t('Open in admin')}</a>`),
+                true
+            );
+        } catch (err) {
+            console.error('Compound products creator failed:', err);
+            const msg = err && err.message ? err.message : String(err);
+            setCompoundCreatorStatus(t('Failed: {0}', msg), true);
+            showToast(t('Compound product creation failed: {0}', msg));
+        } finally {
+            setCompoundCreatorBusy(false);
+        }
+    };
 
     const checkBackendLogin = async () => {
         try {
@@ -1358,6 +1740,17 @@ const CCVToolbar = (() => {
                         </button>
                         <p class="ccv-hint">${t('Removes CCVGoPopUpClicked and cookie_preference to show the cookie modal again.')}</p>
                     </div>
+                    <div class="ccv-section" id="ccv-compound-creator-section">
+                        <div class="ccv-section-header">
+                            <span class="ccv-section-title">${t('Compound products creator')}</span>
+                        </div>
+                        <p class="ccv-hint">${t('Creates PC child products via the REST API, then a new compound product in admin. Requires API keys in Settings and an admin login.')}</p>
+                        <button type="button" class="ccv-btn ccv-btn-primary ccv-btn-full" data-action="create-compound-pc" id="ccv-compound-creator-btn">
+                            ${icons.add}
+                            <span>${t('Create PC compound product')}</span>
+                        </button>
+                        <p id="ccv-compound-creator-status" class="ccv-compound-creator-status" aria-live="polite"></p>
+                    </div>
                 </div>
                 <div class="ccv-tab-content" data-content="scripts">
                     <div class="ccv-scripts-view" id="ccv-scripts-list-view">
@@ -1479,6 +1872,23 @@ const CCVToolbar = (() => {
                         </div>
                         <span class="ccv-hint">${t('Current version')}: v${VERSION}</span>
                         <button class="ccv-btn ccv-btn-primary" data-action="check-updates" style="margin-top: 8px; width: 100%; justify-content: center;">${icons.refresh}<span>${t('Check for Updates')}</span></button>
+                    </div>
+                    <div class="ccv-settings-group">
+                        <label class="ccv-settings-label">${t('API')}</label>
+                        <span class="ccv-hint">${t('Store your CCV Shop API credentials for use by toolbar features.')}</span>
+                        <div class="ccv-api-field" style="margin-top: 8px;">
+                            <div class="ccv-defaults-toggle-info">
+                                <span class="ccv-defaults-toggle-title">${t('Public key')}</span>
+                                <span class="ccv-defaults-toggle-desc">${t('API requests use the current shop as the domain')} (<code>${window.location.hostname}</code>).</span>
+                            </div>
+                            <input type="text" class="ccv-api-input" id="ccv-api-public-key" autocomplete="off" spellcheck="false" value="${escapeHtml(config.apiPublicKey || '')}">
+                        </div>
+                        <div class="ccv-api-field">
+                            <div class="ccv-defaults-toggle-info">
+                                <span class="ccv-defaults-toggle-title">${t('Private key')}</span>
+                            </div>
+                            <input type="password" class="ccv-api-input" id="ccv-api-private-key" autocomplete="off" spellcheck="false" value="${escapeHtml(config.apiPrivateKey || '')}">
+                        </div>
                     </div>
                     <div class="ccv-settings-group">
                         <label class="ccv-settings-label">${t('Cross-Domain Defaults')}</label>
@@ -1990,7 +2400,9 @@ const CCVToolbar = (() => {
             position: config.position,
             usesDefaultConfig: config.usesDefaultConfig,
             language: config.language,
-            infoBarPosition: config.infoBarPosition
+            infoBarPosition: config.infoBarPosition,
+            apiPublicKey: config.apiPublicKey,
+            apiPrivateKey: config.apiPrivateKey
         }, null, 2);
         navigator.clipboard.writeText(data).then(() => showToast(t('Configuration copied to clipboard')));
     };
@@ -2014,6 +2426,8 @@ const CCVToolbar = (() => {
             if (typeof data.usesDefaultConfig === 'boolean') config.usesDefaultConfig = data.usesDefaultConfig;
             if (data.language) config.language = data.language;
             if (data.infoBarPosition) config.infoBarPosition = data.infoBarPosition;
+            if (typeof data.apiPublicKey === 'string') config.apiPublicKey = data.apiPublicKey;
+            if (typeof data.apiPrivateKey === 'string') config.apiPrivateKey = data.apiPrivateKey;
             applyTheme();
             saveConfig();
             render();
@@ -2039,7 +2453,9 @@ const CCVToolbar = (() => {
             position: config.position,
             usesDefaultConfig: config.usesDefaultConfig,
             language: config.language,
-            infoBarPosition: config.infoBarPosition
+            infoBarPosition: config.infoBarPosition,
+            apiPublicKey: config.apiPublicKey,
+            apiPrivateKey: config.apiPrivateKey
         }, null, 2);
         const blob = new Blob([data], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -2078,6 +2494,8 @@ const CCVToolbar = (() => {
                     if (data.minimizedClickBehavior) config.minimizedClickBehavior = data.minimizedClickBehavior;
                     if (data.language) config.language = data.language;
                     if (data.infoBarPosition) config.infoBarPosition = data.infoBarPosition;
+                    if (typeof data.apiPublicKey === 'string') config.apiPublicKey = data.apiPublicKey;
+                    if (typeof data.apiPrivateKey === 'string') config.apiPrivateKey = data.apiPrivateKey;
                     applyTheme();
                     saveConfig();
                     render();
@@ -2951,6 +3369,9 @@ const CCVToolbar = (() => {
             case 'clear-cookies':
                 clearCookiePreferences();
                 break;
+            case 'create-compound-pc':
+                runCompoundProductsCreator();
+                break;
             case 'add-custom-color':
                 showCustomColorModal();
                 break;
@@ -3233,6 +3654,15 @@ const CCVToolbar = (() => {
         render();
 
         elements.toolbar.addEventListener('click', handleClick);
+        elements.toolbar.addEventListener('input', (e) => {
+            if (e.target.id === 'ccv-api-public-key') {
+                config.apiPublicKey = e.target.value;
+                saveConfig();
+            } else if (e.target.id === 'ccv-api-private-key') {
+                config.apiPrivateKey = e.target.value;
+                saveConfig();
+            }
+        });
         elements.toolbar.addEventListener('change', (e) => {
             const path = e.target.dataset?.scriptPath;
             if (path && e.target.getAttribute('data-action') === 'script-toggle') {
