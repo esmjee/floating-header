@@ -287,11 +287,12 @@
         const priceFormat = price.toFixed(2).replace('.', ',');
         const priceInc = (price * 1.21).toFixed(2);
         const priceIncFormat = priceInc.replace('.', ',');
+        const linkCategoryViaApi = overrides.linkCategoryViaApi === true;
         const categoryId = overrides.categoryId != null ? overrides.categoryId : reg.categoryId;
         const categoryPath = overrides.categoryPath != null
             ? overrides.categoryPath
             : (reg.categoryPath || reg.categoryName || COMPOUND_CATEGORY_NAME);
-        if (!categoryId) {
+        if (!linkCategoryViaApi && !categoryId) {
             throw new Error('categoryId is required (ensure compound category exists)');
         }
         const packageId = overrides.packageId != null ? overrides.packageId : reg.packageId;
@@ -299,7 +300,9 @@
         const photoId = overrides.photoId != null ? overrides.photoId : (reg.photoId || '');
 
         if (reg.type === 'compound') {
-            const categoryJson = buildCategoryJson(categoryId, categoryPath, id, isAdd, overrides.categoryLinkId);
+            const categoryJson = linkCategoryViaApi
+                ? '[]'
+                : buildCategoryJson(categoryId, categoryPath, id, isAdd, overrides.categoryLinkId);
             const staggeredJson = '[{"Id":"fixed","ProductId":"' + id + '","Number":1,"Price":' + priceStr + ',"Discount":0,"SellPrice":' + priceStr + ',"TAX":21,"TaxTariff":"NORMAL","StaggeredPrice":' + priceStr + ',"StaggeredSellPrice":' + priceStr + ',"OriginalDiscount":"0.00","Price_Format":"' + priceFormat + '","Price_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","Price_Inc":' + priceInc + ',"Price_Inc_Format":"' + priceIncFormat + '","Price_Inc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceIncFormat + '","Price_Exc":' + priceStr + ',"Price_Exc_Format":"' + priceFormat + '","Price_Exc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","Discount_Format":"0,00","Discount_FormatWithCurrency":"&#x20ac;&#x00a0;0,00","Discount_Inc":0,"Discount_Inc_Format":"0,00","Discount_Inc_FormatWithCurrency":"&#x20ac;&#x00a0;0,00","Discount_Exc":0,"Discount_Exc_Format":"0,00","Discount_Exc_FormatWithCurrency":"&#x20ac;&#x00a0;0,00","SellPrice_Format":"' + priceFormat + '","SellPrice_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","SellPrice_Inc":' + priceInc + ',"SellPrice_Inc_Format":"' + priceIncFormat + '","SellPrice_Inc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceIncFormat + '","SellPrice_Exc":' + priceStr + ',"SellPrice_Exc_Format":"' + priceFormat + '","SellPrice_Exc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","StaggeredPrice_Format":"' + priceFormat + '","StaggeredPrice_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","StaggeredPrice_Inc":' + priceInc + ',"StaggeredPrice_Inc_Format":"' + priceIncFormat + '","StaggeredPrice_Inc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceIncFormat + '","StaggeredPrice_Exc":' + priceStr + ',"StaggeredPrice_Exc_Format":"' + priceFormat + '","StaggeredPrice_Exc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","StaggeredSellPrice_Format":"' + priceFormat + '","StaggeredSellPrice_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","StaggeredSellPrice_Inc":' + priceInc + ',"StaggeredSellPrice_Inc_Format":"' + priceIncFormat + '","StaggeredSellPrice_Inc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceIncFormat + '","StaggeredSellPrice_Exc":' + priceStr + ',"StaggeredSellPrice_Exc_Format":"' + priceFormat + '","StaggeredSellPrice_Exc_FormatWithCurrency":"&#x20ac;&#x00a0;' + priceFormat + '","OriginalStaggeredPriceSellPrice":"' + priceStr + '.00","OriginalDiscount_Format":"0,00","OriginalDiscount_FormatWithCurrency":"&#x20ac;&#x00a0;0,00","OriginalDiscount_Inc":0,"OriginalDiscount_Inc_Format":"0,00","OriginalDiscount_Inc_FormatWithCurrency":"&#x20ac;&#x00a0;0,00","OriginalDiscount_Exc":0,"OriginalDiscount_Exc_Format":"0,00","OriginalDiscount_Exc_FormatWithCurrency":"&#x20ac;&#x00a0;0,00","TotalPrice":"' + priceFormat + '"}]';
             const photoJson = isAdd ? '[]' : '[{"Id":"' + photoId + '","Product":"' + id + '","Extension":".jpg","MainPhoto":"Y","Alt":"","Position":"1","Type":"Current"}]';
             const fields = [
