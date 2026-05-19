@@ -114,6 +114,26 @@
         return lang.charAt(0).toUpperCase() + lang.slice(1);
     }
 
+    function slugifyForAlias(value) {
+        return String(value)
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+    }
+
+    function extractAdminFormErrors(html) {
+        if (!html || html.indexOf('niet opgeslagen') === -1) return null;
+        const errors = [];
+        const re = /<span>([^<:]+):\s*<em>([^<]+)<\/em>\s*<\/span>/gi;
+        let match;
+        while ((match = re.exec(html)) !== null) {
+            errors.push(match[1].trim() + ': ' + match[2].trim());
+        }
+        return errors.length ? errors.join('; ') : 'Product not saved — validation failed';
+    }
+
     function childKeyFromElement(elementTitle, position) {
         return String(elementTitle).replace(/\s+/g, '-') + '-' + position;
     }
@@ -226,13 +246,18 @@
         } else {
             names = generateDisplayNames(productName, enabledLangs);
             if (overrides.productNumber) names.productNumber = overrides.productNumber;
-            if (reg && reg.aliasSlug) names.aliasSlug = reg.aliasSlug;
         }
 
         if (!reg) return { name: productName, type: 'unknown', fields: [] };
 
         const productId = overrides.productId != null ? String(overrides.productId) : reg.productId;
         const isAdd = overrides.mode === 'Add' || productId === '0' || productId === '';
+
+        if (isAdd && names.productNumber) {
+            names.aliasSlug = slugifyForAlias(names.productNumber);
+        } else if (reg.aliasSlug) {
+            names.aliasSlug = reg.aliasSlug;
+        }
         const id = isAdd ? '0' : productId;
         const price = overrides.price != null ? Number(overrides.price) : (reg.price != null ? reg.price : 50);
         const priceStr = String(price);
@@ -272,7 +297,7 @@
             }
             fields.push(['Package', packageId]);
             for (let L2 = 0; L2 < enabledLangs.length; L2++) {
-                fields.push(['Specs_' + enabledLangs[L2], names.name[enabledLangs[L2]]]);
+                fields.push(['Specs_' + enabledLangs[L2], '']);
             }
             fields.push(
                 ['ColorId', ''],
@@ -338,6 +363,8 @@
             getAddCompoundProductUrl: getAddCompoundProductUrl,
             buildFormData: buildFormData,
             getProductIdFromResponse: getProductIdFromResponse,
+            extractProductIdFromText: extractProductIdFromText,
+            extractAdminFormErrors: extractAdminFormErrors,
             GenerateProductObject: GenerateProductObject,
             remapCompoundElementsProductIds: remapCompoundElementsProductIds,
             childKeyFromElement: childKeyFromElement,
