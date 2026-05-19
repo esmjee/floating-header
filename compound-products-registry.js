@@ -62,7 +62,7 @@
     }
 
     function getAddCompoundProductUrl() {
-        return getBaseUrl() + '/AdminItems/ProductManagement/AddCompoundProduct.php?AdminItem=4&Width=880&Height=480';
+        return getBaseUrl() + '/AdminItems/ProductManagement/AddCompoundProduct.php?AdminItem=4';
     }
 
     function buildFormData(fields) {
@@ -76,16 +76,38 @@
         return fd;
     }
 
-    function getProductIdFromResponse(response) {
-        const loc = response.headers.get('Location');
-        if (loc) {
-            const match = loc.match(/[?&](?:Product|Id)=(\d+)/);
-            if (match) return match[1];
+    function extractProductIdFromText(text) {
+        if (!text) return null;
+        const patterns = [
+            /[?&]Product=(\d+)/i,
+            /[?&]product_id=(\d+)/i,
+            /ShowProducts\.php[^"'\\s]*[?&]Product=(\d+)/i,
+            /ModifyCompoundProduct\.php[^"'\\s]*[?&]Product=(\d+)/i,
+            /["']ProductId["']\s*:\s*(\d+)/i,
+            /ProductId\s*[=:]\s*["']?(\d+)/i,
+            /name=["']Id["'][^>]*value=["'](\d+)["']/i,
+            /value=["'](\d+)["'][^>]*name=["']Id["']/i,
+            /name=["']ObjectId["'][^>]*value=["'](\d+)["']/i,
+            /\/products\/(\d+)\/?/i
+        ];
+        for (let i = 0; i < patterns.length; i++) {
+            const match = text.match(patterns[i]);
+            if (match && match[1] !== '0') return match[1];
         }
-        const url = response.url || '';
-        const match = url.match(/[?&](?:Product|Id)=(\d+)/);
-        if (match) return match[1];
         return null;
+    }
+
+    async function getProductIdFromResponse(response) {
+        const fromHeaders = extractProductIdFromText(response.headers.get('Location') || '');
+        if (fromHeaders) return fromHeaders;
+        const fromUrl = extractProductIdFromText(response.url || '');
+        if (fromUrl) return fromUrl;
+        try {
+            const text = await response.clone().text();
+            return extractProductIdFromText(text);
+        } catch (e) {
+            return null;
+        }
     }
 
     function _langKey(lang) {
@@ -235,7 +257,7 @@
                 ['iOriginalProductId', ''],
                 ['Width', ''],
                 ['Height', ''],
-                ['DoNotClose', '1'],
+                ['DoNotClose', isAdd ? '0' : '1'],
                 ['SystemStatus', 'Inactive'],
                 ['SystemStatus', 'Active'],
                 ['ProductNumber', names.productNumber]
