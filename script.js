@@ -1,5 +1,5 @@
 const CCVToolbar = (() => {
-    const VERSION = '2.1.3';
+    const VERSION = '2.1.31';
 
     const UPDATE_URL_JS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/script.js';
     const UPDATE_URL_CSS = 'https://raw.githubusercontent.com/esmjee/floating-header/main/style.css';
@@ -1744,12 +1744,12 @@ const CCVToolbar = (() => {
                         <div class="ccv-section-header">
                             <span class="ccv-section-title">${t('Compound products creator')}</span>
                         </div>
-                        <p class="ccv-hint">${t('Creates PC child products via the REST API, then a new compound product in admin. Requires API keys in Settings and an admin login.')}</p>
-                        <button type="button" class="ccv-btn ccv-btn-primary ccv-btn-full" data-action="create-compound-pc" id="ccv-compound-creator-btn">
+                        <p id="ccv-compound-creator-status" class="ccv-compound-creator-status" aria-live="polite"></p>
+                        <button type="button" class="ccv-btn ccv-btn-full" data-action="create-compound-pc" id="ccv-compound-creator-btn">
                             ${icons.add}
                             <span>${t('Create PC compound product')}</span>
                         </button>
-                        <p id="ccv-compound-creator-status" class="ccv-compound-creator-status" aria-live="polite"></p>
+                        <p class="ccv-hint">${t('Creates PC child products via the REST API, then a new compound product in admin. Requires API keys in Settings and an admin login.')}</p>
                     </div>
                 </div>
                 <div class="ccv-tab-content" data-content="scripts">
